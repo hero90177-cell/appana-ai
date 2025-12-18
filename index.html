@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b12">
+  <title>Appana AI — Ultra Study Mode</title>
+  
+  <link rel="stylesheet" href="Style.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/809/809052.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<div id="app" class="app-container">
+
+  <aside class="sidebar">
+    <header class="brand">
+      <div class="logo-wrap">
+        <img src="https://cdn-icons-png.flaticon.com/512/809/809052.png" alt="Eagle">
+      </div>
+      <div class="brand-text">
+        <h1>Appana AI</h1>
+        <small>Ultra Indian Techno</small>
+      </div>
+    </header>
+
+    <div class="wisdom-widget">
+      <small>💡 Daily Motivation</small>
+      <p id="daily-quote">"Padhai kar lo, future ban jayega."</p>
+    </div>
+
+    <div class="stats-panel">
+      <div class="stat-row">
+        <span>🏆 Rank: <strong id="user-rank">Novice</strong></span>
+      </div>
+      <div class="stat-row">
+        <span>🔥 Streak: <strong id="streak">0</strong></span>
+      </div>
+    </div>
+
+    <section class="controls">
+      <label>Target Exam / Course
+        <select id="subject-selector">
+          <optgroup label="School: Class 9 & 10">
+            <option>Class 9 (Maths & Science)</option>
+            <option>Class 9 (Social Studies)</option>
+            <option>Class 9 (All Subjects)</option>
+            <option>Class 10 (Maths Standard)</option>
+            <option>Class 10 (Maths Basic)</option>
+            <option>Class 10 (Science)</option>
+            <option>Class 10 (SST & English)</option>
+          </optgroup>
+
+          <optgroup label="School: Class 11 & 12">
+            <option>Class 11 Science (PCM)</option>
+            <option>Class 11 Science (PCB)</option>
+            <option>Class 11 Science (PCMB)</option>
+            <option>Class 11 Commerce (With Maths)</option>
+            <option>Class 11 Commerce (Without Maths)</option>
+            <option>Class 11 Humanities/Arts</option>
+            <option>Class 12 Science (PCM)</option>
+            <option>Class 12 Science (PCB)</option>
+            <option>Class 12 Commerce</option>
+            <option>Class 12 Humanities/Arts</option>
+          </optgroup>
+
+          <optgroup label="Entrance Exams (Science)">
+            <option>JEE Mains</option>
+            <option>JEE Advanced</option>
+            <option>NEET (UG)</option>
+            <option>BITSAT</option>
+            <option>VITEEE</option>
+            <option>WBJEE / KCET / MHTCET</option>
+            <option>NATA (Architecture)</option>
+          </optgroup>
+
+          <optgroup label="Entrance Exams (General)">
+            <option>CUET (UG - All Domains)</option>
+            <option>CLAT (Law)</option>
+            <option>IPMAT (Management)</option>
+            <option>NDA (Defence Services)</option>
+            <option>NCHMCT JEE (Hotel Mgmt)</option>
+          </optgroup>
+
+          <optgroup label="Professional Courses">
+            <option>CA Foundation</option>
+            <option>CA Intermediate</option>
+            <option>CA Final</option>
+            <option>CS (Company Secretary)</option>
+            <option>CMA (Cost & Mgmt Accountant)</option>
+            <option>CFA (Chartered Financial Analyst)</option>
+          </optgroup>
+
+          <optgroup label="Post Graduation & Govt">
+            <option>MBA (CAT / XAT / GMAT)</option>
+            <option>UPSC (Civil Services)</option>
+            <option>GATE (Engineering)</option>
+            <option>SSC CGL / CHSL</option>
+            <option>Banking (IBPS / SBI)</option>
+            <option>UGC NET (Teaching)</option>
+          </optgroup>
+
+          <optgroup label="University / College">
+            <option>B.Tech (CSE/IT/ECE/Mech/Civil)</option>
+            <option>MBBS / BDS</option>
+            <option>B.Com (Hons/Prog)</option>
+            <option>B.A. (Economics/Pol.Sci/History)</option>
+            <option>B.Sc (Physics/Chem/Maths)</option>
+            <option>BBA / BMS</option>
+            <option>LLB / LLM</option>
+          </optgroup>
+        </select>
+      </label>
+
+      <label>Language
+        <select id="language-selector">
+          <option>English</option>
+          <option>Hinglish (Indian Mix)</option>
+          <option>Hindi</option>
+          <option>Bengali</option>
+          <option>Tamil</option>
+          <option>Marathi</option>
+          <option>Gujarati</option>
+        </select>
+      </label>
+
+      <div class="small-btns">
+        <button id="login-btn">🔐 Login</button>
+        <button id="logout-btn" class="hidden">🚪 Logout</button>
+        <button id="backup-btn">☁ Backup</button>
+      </div>
+    </section>
+  </aside>
+
+  <main class="main-area">
+    <header class="chat-header">
+      <div>
+        <h2>Study Chat</h2>
+        <small>AI Mentor (Eagle Mode 🦅)</small>
+      </div>
+      <div class="header-actions">
+        <span id="net-status" class="status-dot green" title="Internet Connection">● Net</span>
+        <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
+        
+        <button id="zen-mode-btn" class="icon-btn" title="Zen Mode">⛶</button>
+      </div>
+    </header>
+
+    <div id="chat-box" class="chat-box">
+      <div class="message ai-message">
+        <div class="msg-text">
+          <strong>🦅 Appana AI:</strong>
+          <p>Hello! I am your Eagle Mentor. Select your specific subject from the sidebar and let's fly high!<br>
+          <em>Ready for notes, doubts, or a timer?</em></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-area">
+      <div id="file-preview" class="hidden">
+        <span id="file-name"></span> <button id="remove-file">×</button>
+      </div>
+      
+      <form class="composer" onsubmit="return false;">
+        <label for="file-upload" class="icon-btn">📎</label>
+        <input type="file" id="file-upload" hidden>
+        
+        <button id="voice-btn" class="icon-btn">🎤</button>
+        
+        <input id="user-input" placeholder="Ask your doubt..." autocomplete="off">
+        
+        <button id="send-btn" class="send-btn">Send</button>
+      </form>
+    </div>
+  </main>
+
+  <aside class="right-panel">
+    
+    <section class="tool-card">
+      <h3>⏱ Exam Timer</h3>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-controls">
+        <input id="timer-input" placeholder="Min (e.g. 30)">
+        <button id="start-timer-btn">Start</button>
+      </div>
+    </section>
+
+    <section class="tool-card">
+      <h3>⚡ Generators</h3>
+      <input id="topic-input" placeholder="Topic (e.g. GST)">
+      <div class="grid-btns">
+        <button id="gen-notes-btn">Notes</button>
+        <button id="gen-mcq-btn">Quiz</button>
+        <button id="gen-imp-btn">Imp Qs</button>
+      </div>
+    </section>
+
+    <section class="tool-card">
+      <h3>⚙ Actions</h3>
+      <button id="pdf-btn" class="full-btn">Download PDF</button>
+      <div class="toggles">
+        <label><input type="checkbox" id="tts-toggle" checked> Voice Reply</label>
+        <label><input type="checkbox" id="auto-sync-toggle" checked> Auto Sync</label>
+      </div>
+      <button id="clear-db-btn" class="danger-btn">Reset App</button>
+    </section>
+
+  </aside>
+</div>
+
+<script type="module" src="Script.js"></script>
+</body>
+</html>
