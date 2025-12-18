@@ -2,8 +2,8 @@ const CACHE = "appana-cf-v2";
 const ASSETS = [
   "/",
   "/index.html",
-  "/Style.css",
-  "/Script.js",
+  "/style.css",   // FIXED
+  "/script.js",   // FIXED
   "/manifest.json"
 ];
 
@@ -39,3 +39,4 @@ self.addEventListener("fetch", e => {
     );
   }
 });
+                             
