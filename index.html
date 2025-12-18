@@ -69,50 +69,13 @@
             <option>Class 12 Humanities/Arts</option>
           </optgroup>
 
-          <optgroup label="Entrance Exams (Science)">
-            <option>JEE Mains</option>
-            <option>JEE Advanced</option>
+          <optgroup label="Entrance Exams">
+            <option>JEE Mains / Advanced</option>
             <option>NEET (UG)</option>
-            <option>BITSAT</option>
-            <option>VITEEE</option>
-            <option>WBJEE / KCET / MHTCET</option>
-            <option>NATA (Architecture)</option>
-          </optgroup>
-
-          <optgroup label="Entrance Exams (General)">
-            <option>CUET (UG - All Domains)</option>
+            <option>CUET (UG)</option>
+            <option>NDA (Defence)</option>
             <option>CLAT (Law)</option>
-            <option>IPMAT (Management)</option>
-            <option>NDA (Defence Services)</option>
-            <option>NCHMCT JEE (Hotel Mgmt)</option>
-          </optgroup>
-
-          <optgroup label="Professional Courses">
             <option>CA Foundation</option>
-            <option>CA Intermediate</option>
-            <option>CA Final</option>
-            <option>CS (Company Secretary)</option>
-            <option>CMA (Cost & Mgmt Accountant)</option>
-            <option>CFA (Chartered Financial Analyst)</option>
-          </optgroup>
-
-          <optgroup label="Post Graduation & Govt">
-            <option>MBA (CAT / XAT / GMAT)</option>
-            <option>UPSC (Civil Services)</option>
-            <option>GATE (Engineering)</option>
-            <option>SSC CGL / CHSL</option>
-            <option>Banking (IBPS / SBI)</option>
-            <option>UGC NET (Teaching)</option>
-          </optgroup>
-
-          <optgroup label="University / College">
-            <option>B.Tech (CSE/IT/ECE/Mech/Civil)</option>
-            <option>MBBS / BDS</option>
-            <option>B.Com (Hons/Prog)</option>
-            <option>B.A. (Economics/Pol.Sci/History)</option>
-            <option>B.Sc (Physics/Chem/Maths)</option>
-            <option>BBA / BMS</option>
-            <option>LLB / LLM</option>
           </optgroup>
         </select>
       </label>
@@ -143,6 +106,12 @@
         <h2>Study Chat</h2>
         <small>AI Mentor (Eagle Mode 🦅)</small>
       </div>
+      
+      <div id="mini-timer" class="hidden" style="background:#0f1220; padding:4px 10px; border-radius:12px; border:1px solid #1e90ff; display:flex; align-items:center; gap:8px;">
+        <span style="font-family:monospace; font-weight:bold; color:#1e90ff; font-size:16px;" id="timer-display">00:00</span>
+        <button id="stop-timer-btn" style="padding:2px 8px; font-size:10px; background:#ff4757; color:white; border:none; border-radius:4px;">STOP</button>
+      </div>
+
       <div class="header-actions">
         <span id="net-status" class="status-dot green" title="Internet Connection">● Net</span>
         <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
@@ -155,8 +124,7 @@
       <div class="message ai-message">
         <div class="msg-text">
           <strong>🦅 Appana AI:</strong>
-          <p>Hello! I am your Eagle Mentor. Select your specific subject from the sidebar and let's fly high!<br>
-          <em>Ready for notes, doubts, or a timer?</em></p>
+          <p>Hello! I am your Eagle Mentor. Ask me anything, upload a photo, or say <b>"Start timer 30 mins"</b> to begin!</p>
         </div>
       </div>
     </div>
@@ -168,7 +136,7 @@
       
       <form class="composer" onsubmit="return false;">
         <label for="file-upload" class="icon-btn">📎</label>
-        <input type="file" id="file-upload" hidden>
+        <input type="file" id="file-upload" accept="image/*, .txt, .pdf" hidden>
         
         <button id="voice-btn" class="icon-btn">🎤</button>
         
@@ -180,16 +148,6 @@
   </main>
 
   <aside class="right-panel">
-    
-    <section class="tool-card">
-      <h3>⏱ Exam Timer</h3>
-      <div class="timer-display" id="timer-display">00:00</div>
-      <div class="timer-controls">
-        <input id="timer-input" placeholder="Min (e.g. 30)">
-        <button id="start-timer-btn">Start</button>
-      </div>
-    </section>
-
     <section class="tool-card">
       <h3>⚡ Generators</h3>
       <input id="topic-input" placeholder="Topic (e.g. GST)">

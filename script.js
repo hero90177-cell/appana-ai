@@ -20,35 +20,28 @@ document.addEventListener("DOMContentLoaded", () => {
   checkConnection();
   setupVoiceInput();
 
-  // --- Network Listeners ---
+  // Listeners
   window.addEventListener("online", () => updateStatus("net-status", true));
   window.addEventListener("offline", () => updateStatus("net-status", false));
 
-  // --- Chat Controls ---
   el("send-btn").onclick = () => handleSend();
   el("user-input").onkeypress = e => e.key === "Enter" && handleSend();
   
-  // --- Auth Controls ---
   el("login-btn").onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
   el("logout-btn").onclick = () => signOut(auth);
 
-  // --- Zen Mode (FIXED) ---
-  el("zen-mode-btn").onclick = () => {
-    el("app").classList.toggle("zen-active");
-  };
+  el("zen-mode-btn").onclick = () => el("app").classList.toggle("zen-active");
 
-  // --- Timer Controls (FIXED) ---
-  el("start-timer-btn").onclick = startTimer;
-
-  // --- Generator Buttons (FIXED) ---
+  // Generators & Actions
   el("gen-notes-btn").onclick = () => runGenerator('notes');
   el("gen-mcq-btn").onclick = () => runGenerator('mcq');
   el("gen-imp-btn").onclick = () => runGenerator('imp');
-
-  // --- PDF Download (FIXED) ---
   el("pdf-btn").onclick = downloadPDF;
+  
+  // Timer Stop
+  if(el("stop-timer-btn")) el("stop-timer-btn").onclick = stopTimer;
 
-  // --- File Upload UI ---
+  // File Upload
   el("file-upload").onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -61,7 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
     el("file-preview").classList.add("hidden");
   };
   
-  // --- Reset ---
   el("clear-db-btn").onclick = () => {
       if(confirm("Clear chat history?")) {
           el("chat-box").innerHTML = "";
@@ -72,36 +64,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ---------------- CORE CHAT LOGIC ---------------- */
 
-function handleSend(manualText = null) {
+async function handleSend(manualText = null) {
   const inputEl = el("user-input");
   const t = manualText || inputEl.value.trim();
+  const fileInput = el("file-upload");
+  const file = fileInput.files[0];
   
-  if (!t) return;
+  if (!t && !file) return;
 
   // 1. Show User Message
-  appendMsg("You", t, "user-message");
+  appendMsg("You", t + (file ? ` [Attached: ${file.name}]` : ""), "user-message");
   
-  // 2. Clear Input
   if (!manualText) inputEl.value = "";
   
-  // 3. Add XP
-  addXP(10);
+  // 2. Convert Image to Base64 (FIX for Uploads)
+  let imageData = null;
+  if (file && file.type.startsWith("image/")) {
+      try {
+          imageData = await readFileAsBase64(file);
+      } catch(e) { console.error("File error", e); }
+  }
+
+  // Clear file input
+  el("file-upload").value = "";
+  el("file-preview").classList.add("hidden");
+
+  // 3. MAGIC TIMER COMMANDS (FIX for Timer)
+  const lowerMsg = t.toLowerCase();
+  if (lowerMsg.includes("start timer") || lowerMsg.includes("set timer")) {
+    const minutes = lowerMsg.match(/\d+/) ? parseInt(lowerMsg.match(/\d+/)[0]) : 25;
+    startTimer(minutes);
+    appendMsg("🦅 Appana AI", `Timer started for ${minutes} mins!`, "ai-message");
+    saveToCloud(t, `Started timer for ${minutes} mins`);
+    return;
+  }
+  if (lowerMsg.includes("stop timer")) {
+    stopTimer();
+    appendMsg("🦅 Appana AI", "Timer stopped.", "ai-message");
+    return;
+  }
   
   // 4. Trigger AI
-  triggerAI(t);
+  triggerAI(t, imageData);
 }
 
-function triggerAI(msg) {
-  appendMsg("🦅 Appana AI", "Thinking...", "ai-message", "temp");
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result.split(',')[1]; // Remove data url prefix
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
 
-  const fileInput = el("file-upload");
-  const hasFile = fileInput.files.length > 0 ? `[User attached file: ${fileInput.files[0].name}] ` : "";
+function triggerAI(msg, imageData) {
+  appendMsg("🦅 Appana AI", "Thinking...", "ai-message", "temp");
 
   fetch("/api/ai-chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      message: hasFile + msg,
+      message: msg,
+      image: imageData, // Send image data
       subject: el("subject-selector").value,
       language: el("language-selector").value,
       uid: auth.currentUser?.uid || "guest"
@@ -115,21 +142,18 @@ function triggerAI(msg) {
       const replyText = d.reply || d.error || "No response.";
       appendMsg("🦅 Appana AI", replyText, "ai-message");
       
-      // Auto-Speak if enabled
-      if (el("tts-toggle").checked && d.reply) {
-        speak(d.reply);
-      }
-
+      if (el("tts-toggle").checked && d.reply) speak(d.reply);
       saveToCloud(msg, d.reply);
     })
     .catch(() => {
       document.getElementById("temp")?.remove();
       updateStatus("api-status", false);
-      appendMsg("🦅 Appana AI", "Offline or server error.", "ai-message");
+      appendMsg("🦅 Appana AI", "Offline. Check API Key or Connection.", "ai-message");
     });
 }
 
-/* ---------------- FEATURE: GENERATORS ---------------- */
+/* ---------------- FEATURES ---------------- */
+
 function runGenerator(type) {
     const topic = el("topic-input").value || el("subject-selector").value;
     const prompts = {
@@ -140,12 +164,12 @@ function runGenerator(type) {
     handleSend(prompts[type]);
 }
 
-/* ---------------- FEATURE: TIMER ---------------- */
-function startTimer() {
-    const min = parseInt(el("timer-input").value) || 25;
+function startTimer(min = 25) {
+    clearInterval(STATE.timerId);
+    el("mini-timer").classList.remove("hidden");
+    el("mini-timer").style.display = "flex";
+
     let seconds = min * 60;
-    
-    if (STATE.timerId) clearInterval(STATE.timerId);
     
     STATE.timerId = setInterval(() => {
         seconds--;
@@ -154,64 +178,45 @@ function startTimer() {
         el("timer-display").innerText = `${m}:${s}`;
         
         if (seconds <= 0) {
-            clearInterval(STATE.timerId);
-            el("timer-display").innerText = "00:00";
+            stopTimer();
             alert("Time's up! Take a break.");
+            speak("Time is up.");
         }
     }, 1000);
 }
 
-/* ---------------- FEATURE: PDF DOWNLOAD ---------------- */
+function stopTimer() {
+    clearInterval(STATE.timerId);
+    el("mini-timer").classList.add("hidden");
+    el("mini-timer").style.display = "none";
+}
+
 function downloadPDF() {
-    if (!window.jspdf) {
-        alert("PDF Library loading... wait a moment.");
-        return;
-    }
+    if (!window.jspdf) { alert("PDF Library loading..."); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
-    doc.setFontSize(16);
     doc.text("Appana AI Notes", 10, 10);
-    doc.setFontSize(10);
-    
     let y = 20;
     document.querySelectorAll(".message").forEach(msg => {
         const txt = msg.innerText;
         const splitText = doc.splitTextToSize(txt, 180);
-        
-        if (y + (splitText.length * 5) > 280) {
-            doc.addPage();
-            y = 10;
-        }
-        
+        if (y + (splitText.length * 5) > 280) { doc.addPage(); y = 10; }
         doc.text(splitText, 10, y);
         y += (splitText.length * 5) + 5;
     });
-    
     doc.save("Appana-Notes.pdf");
 }
 
-/* ---------------- FEATURE: VOICE INPUT ---------------- */
 function setupVoiceInput() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         STATE.recognition = new SpeechRecognition();
         STATE.recognition.lang = "en-IN";
-        
         STATE.recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            el("user-input").value = transcript;
+            el("user-input").value = event.results[0][0].transcript;
             handleSend();
         };
-        
-        el("voice-btn").onclick = () => {
-            el("voice-btn").style.color = "red";
-            STATE.recognition.start();
-        };
-        
-        STATE.recognition.onend = () => {
-            el("voice-btn").style.color = "";
-        };
+        el("voice-btn").onclick = () => STATE.recognition.start();
     } else {
         el("voice-btn").style.display = "none";
     }
@@ -221,27 +226,19 @@ function speak(text) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-IN";
-    u.rate = 1.1;
     window.speechSynthesis.speak(u);
 }
 
-/* ---------------- UTILS & STATE ---------------- */
+/* ---------------- UTILS ---------------- */
 function appendMsg(who, txt, cls, id) {
   const d = document.createElement("div");
   d.className = `message ${cls}`;
   if (id) d.id = id;
-  
-  // Format bold text
   const formatted = txt.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
   d.innerHTML = `<strong>${who}:</strong> ${formatted}`;
-  
   el("chat-box").appendChild(d);
   el("chat-box").scrollTop = el("chat-box").scrollHeight;
-  
-  // Trigger MathJax
-  if (window.MathJax) {
-      window.MathJax.typesetPromise([d]).catch(() => {});
-  }
+  if (window.MathJax) window.MathJax.typesetPromise([d]).catch(() => {});
 }
 
 function updateStatus(id, ok) {
@@ -264,13 +261,6 @@ async function checkConnection() {
   }
 }
 
-function addXP(n) {
-  STATE.xp += n;
-  localStorage.setItem("appana", JSON.stringify(STATE));
-  if(STATE.xp > 200) el("user-rank").innerText = "Scholar";
-  if(STATE.xp > 1000) el("user-rank").innerText = "Master";
-}
-
 function loadState() {
   const s = localStorage.getItem("appana");
   if (s) STATE = { ...STATE, ...JSON.parse(s) };
@@ -278,14 +268,10 @@ function loadState() {
 
 function saveToCloud(u, a) {
   if (!auth.currentUser || !a) return;
-  setDoc(
-    doc(collection(db, "users", auth.currentUser.uid, "chats")),
-    { u, a, ts: serverTimestamp() }
-  ).catch(() => {});
+  setDoc(doc(collection(db, "users", auth.currentUser.uid, "chats")), { u, a, ts: serverTimestamp() }).catch(() => {});
 }
 
 onAuthStateChanged(auth, u => {
   el("login-btn").classList.toggle("hidden", !!u);
   el("logout-btn").classList.toggle("hidden", !u);
-  if(u) appendMsg("System", `Welcome, ${u.displayName}`, "ai-message");
 });
