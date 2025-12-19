@@ -18,7 +18,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
   <script>
-      // PDF Worker Setup
       var pdfjsLib = window['pdfjs-dist/build/pdf'];
       if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
@@ -40,7 +39,7 @@
 
     <div class="wisdom-widget">
       <small>💡 Daily Motivation</small>
-      <p id="daily-quote">"Padhai kar lo, future ban jayega."</p>
+      <p id="daily-quote">"Loading wisdom..."</p>
     </div>
 
     <div class="stats-panel">
@@ -69,20 +68,41 @@
         </select>
       </label>
 
-      <label>Target Exam
+      <label>Target Exam / Class
         <select id="subject-selector">
-          <optgroup label="School">
+          <option value="General" disabled selected>Select Your Goal...</option>
+          <optgroup label="School (CBSE/ICSE/State)">
+            <option>Class 6</option>
+            <option>Class 7</option>
+            <option>Class 8</option>
             <option>Class 9</option>
             <option>Class 10</option>
-            <option>Class 11 Science</option>
-            <option>Class 12 Science</option>
-            <option>Class 12 Commerce</option>
           </optgroup>
-          <optgroup label="Entrance">
-            <option>JEE Mains</option>
-            <option>NEET</option>
-            <option>UPSC</option>
-            <option>CA Foundation</option>
+          <optgroup label="Higher Secondary">
+            <option>Class 11 Science (PCM)</option>
+            <option>Class 11 Science (PCB)</option>
+            <option>Class 11 Commerce</option>
+            <option>Class 11 Arts/Humanities</option>
+            <option>Class 12 Science (PCM)</option>
+            <option>Class 12 Science (PCB)</option>
+            <option>Class 12 Commerce</option>
+            <option>Class 12 Arts/Humanities</option>
+          </optgroup>
+          <optgroup label="Competitive Exams">
+            <option>JEE Mains & Advanced</option>
+            <option>NEET (Medical)</option>
+            <option>UPSC (Civil Services)</option>
+            <option>CA Foundation/Inter</option>
+            <option>CS (Company Secretary)</option>
+            <option>NDA (Defence)</option>
+            <option>CLAT (Law)</option>
+            <option>CUET (University)</option>
+            <option>SSC / Banking / Railways</option>
+          </optgroup>
+          <optgroup label="Skills & Others">
+            <option>Coding / Computer Science</option>
+            <option>English Speaking & Grammar</option>
+            <option>General Knowledge</option>
           </optgroup>
         </select>
       </label>
@@ -90,11 +110,13 @@
       <label>Language
         <select id="language-selector">
           <option>English</option>
-          <option>Hinglish</option>
+          <option>Hinglish (Mix)</option>
           <option>Hindi</option>
           <option>Tamil</option>
           <option>Bengali</option>
           <option>Marathi</option>
+          <option>Telugu</option>
+          <option>Gujarati</option>
         </select>
       </label>
 
@@ -118,8 +140,10 @@
       </div>
 
       <div class="header-actions">
-        <span id="net-status" class="status-dot green" title="Internet Connection">● Net</span>
+        <span id="net-status" class="status-dot white" title="Internet Connection">● Net</span>
         <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
+        
+        <button id="delete-chat-btn" class="icon-btn" title="Clear Chat History" style="color:#ff4757;">🗑️</button>
         <button id="zen-mode-btn" class="icon-btn" title="Zen Mode">⛶</button>
       </div>
     </header>
@@ -128,7 +152,7 @@
       <div class="message ai-message">
         <div class="msg-text">
           <strong>🦅 Appana AI:</strong>
-          <p>Welcome! I can now read <b>Images & PDFs</b>. Upload a paper or say <b>"Start timer"</b>.</p>
+          <p>Welcome back! Select your <b>Class/Subject</b> from the left to begin.</p>
         </div>
       </div>
     </div>
@@ -146,11 +170,8 @@
       <form class="composer" onsubmit="return false;">
         <label for="file-upload" class="icon-btn">📎</label>
         <input type="file" id="file-upload" accept="image/*, .pdf, .txt" hidden>
-        
         <button id="voice-btn" class="icon-btn">🎤</button>
-        
         <input id="user-input" placeholder="Ask / Paste / Type..." autocomplete="off">
-        
         <button id="send-btn" class="send-btn">Send</button>
       </form>
     </div>
@@ -159,18 +180,18 @@
   <aside class="right-panel">
     <section class="tool-card">
       <h3>⚡ Generators</h3>
-      <input id="topic-input" placeholder="Topic (e.g. Newton's Laws)">
+      <input id="topic-input" placeholder="Topic (e.g. Gravity)">
       <div class="grid-btns">
         <button id="gen-notes-btn">Notes</button>
         <button id="gen-mcq-btn">Quiz</button>
         <button id="gen-imp-btn">Imp Qs</button>
-        <button id="gen-passage-btn" style="grid-column: span 3; margin-top:5px; background: rgba(255,255,255,0.1);">📝 Generate Passage/Essay</button>
+        <button id="gen-passage-btn" style="grid-column: span 3; margin-top:5px; background: rgba(255,255,255,0.1);">📝 Generate Passage</button>
       </div>
     </section>
 
     <section class="tool-card">
       <h3>⚙ Tools</h3>
-      <button id="pdf-btn" class="full-btn">Download Chat PDF</button>
+      <button id="pdf-btn" class="full-btn">Download PDF</button>
       <div class="toggles">
         <label><input type="checkbox" id="tts-toggle" checked> Voice Reply</label>
       </div>
@@ -184,7 +205,7 @@
         <div id="chapter-list" style="max-height:100px; overflow-y:auto; margin-top:5px; font-size:11px; color:#aaa;"></div>
       </div>
 
-      <button id="clear-db-btn" class="danger-btn">Reset All Data</button>
+      <button id="clear-db-btn" class="danger-btn" style="opacity:0.6; font-size:11px;">⚠ Factory Reset App</button>
     </section>
   </aside>
 </div>
