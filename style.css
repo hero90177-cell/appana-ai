@@ -15,21 +15,18 @@ body {
   background: linear-gradient(180deg, #060611 0%, #0b0b12 100%);
   color: #e8eefb;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  /* ✅ FIX: Mobile Height Issue */
   height: 100vh;
   height: 100dvh; 
   overflow: hidden;
-  /* ✅ FIX: Base Font Size Increased */
   font-size: 16px; 
 }
 
-/* ✅ FEATURE: Helper to hide elements dynamically */
 .hidden { display: none !important; }
 
 /* LAYOUT */
 .app-container { 
   display: grid; 
-  grid-template-columns: 280px 1fr 300px; /* ✅ FIX: Slightly wider panels */
+  grid-template-columns: 280px 1fr 300px; 
   gap: 16px; 
   padding: 16px; 
   height: 100%; 
@@ -43,7 +40,7 @@ body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 18px; /* ✅ FIX: More breathing room */
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -65,14 +62,14 @@ body {
 /* BRAND */
 .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border); }
 .logo-wrap {
-  width: 50px; height: 50px; /* ✅ FIX: Bigger Logo */
+  width: 50px; height: 50px;
   background: radial-gradient(circle, #102a55, #050b18);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid rgba(30,144,255,0.3);
 }
 .logo-wrap img { width: 32px; height: 32px; }
-.brand-text h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 0.5px; } /* ✅ FIX: Bigger Text */
+.brand-text h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 0.5px; }
 .brand-text small { font-size: 12px; color: var(--muted); }
 
 /* WIDGETS */
@@ -82,14 +79,14 @@ body {
 }
 .stats-panel { 
     background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; 
-    display: flex; flex-direction: column; gap: 6px; font-size: 15px; /* ✅ FIX: Bigger Stats */
+    display: flex; flex-direction: column; gap: 6px; font-size: 15px; 
 }
 .tool-card { background: var(--glass); padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
 .tool-card h3 { margin: 0 0 10px 0; color: var(--accent); font-size: 16px; }
 
 /* INPUTS & BUTTONS */
 select, input {
-  width: 100%; padding: 12px; /* ✅ FIX: Easier to tap */
+  width: 100%; padding: 12px;
   background: rgba(0,0,0,0.3);
   border: 1px solid var(--border);
   border-radius: 8px; color: white;
@@ -122,12 +119,8 @@ button:hover { filter: brightness(1.1); }
 
 /* STATUS DOTS */
 .status-dot { 
-  font-size: 13px; 
-  margin-right: 12px; 
-  font-weight: 600; 
-  display: inline-flex;
-  align-items: center;
-  transition: all 0.3s ease;
+  font-size: 13px; margin-right: 12px; font-weight: 600; 
+  display: inline-flex; align-items: center; transition: all 0.3s ease;
 }
 .status-dot.green { color: #2ecc71; text-shadow: 0 0 6px rgba(46, 204, 113, 0.4); }
 .status-dot.white { color: #ffffff; opacity: 0.6; }
@@ -135,7 +128,7 @@ button:hover { filter: brightness(1.1); }
 .chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
 /* MESSAGES */
-.message { max-width: 85%; padding: 14px 18px; border-radius: 14px; line-height: 1.6; font-size: 16px; } /* ✅ FIX: Readable Text */
+.message { max-width: 85%; padding: 14px 18px; border-radius: 14px; line-height: 1.6; font-size: 16px; }
 .ai-message {
   align-self: flex-start;
   background: linear-gradient(90deg, rgba(30,144,255,0.08), rgba(20,40,80,0.05));
@@ -158,78 +151,53 @@ button:hover { filter: brightness(1.1); }
 .composer input { border-radius: 24px; padding: 14px 18px; font-size: 16px; }
 .send-btn { border-radius: 24px; padding: 12px 24px; font-size: 15px; }
 
-/* ✅ FEATURE: Chapter Tracker & Weakness Styles */
+/* FEATURES */
 .chapter-item { 
     display: flex; justify-content: space-between; padding: 8px; 
     border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; 
 }
 .chapter-item.done { text-decoration: line-through; color: #444; }
-
-.weakness-tag {
-    color: #ff4757; font-weight: bold; border-bottom: 1px dashed #ff4757; cursor: help;
-}
-
-/* ✅ FEATURE: Analytics Modal (Popup) */
-#analytics-modal.hidden { display: none !important; }
-/* Note: The modal HTML is styled inline in index.html to ensure it sits on top, but basic reset here */
+.weakness-tag { color: #ff4757; font-weight: bold; border-bottom: 1px dashed #ff4757; cursor: help; }
 
 /* TIMER */
 .timer-display { font-size: 36px; font-family: monospace; text-align: center; color: var(--accent); margin-bottom: 5px; text-shadow: 0 0 10px rgba(30,144,255,0.3); }
-.timer-controls { display: flex; gap: 8px; }
 
-/* INSTALL BUTTON STYLE */
+/* INSTALL BTN */
 .install-btn {
   background: linear-gradient(90deg, #00b894, #00cec9);
-  color: #fff;
-  font-weight: bold;
+  color: #fff; font-weight: bold;
   box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
-  margin-bottom: 15px;
-  animation: pulse 2s infinite;
+  margin-bottom: 15px; animation: pulse 2s infinite;
   padding: 12px; font-size: 14px;
 }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-  100% { transform: scale(1); }
+/* ✅ NEW: Checkbox & Selection Styles */
+.msg-check {
+    width: 20px; height: 20px; margin-right: 12px;
+    accent-color: #1e90ff; cursor: pointer;
+}
+.chat-box.select-mode-active .message {
+    border: 1px dashed rgba(255, 255, 255, 0.4); cursor: pointer;
+}
+.chat-box.select-mode-active .message:hover {
+    background: rgba(30, 144, 255, 0.15);
+}
+#selection-toolbar {
+    position: sticky; top: 0; z-index: 999;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-weight: bold;
 }
 
 /* MOBILE LAYOUT */
 @media (max-width: 900px) {
-  body { overflow: auto; height: auto; } /* Allow scrolling on phone */
-  
+  body { overflow: auto; height: auto; } 
   .app-container { 
-    grid-template-columns: 1fr; 
-    display: flex;
-    flex-direction: column; /* Stack them vertically */
-    padding: 12px;
-    gap: 20px;
-    height: auto;
-    overflow: visible;
+    grid-template-columns: 1fr; display: flex; flexDirection: column;
+    padding: 12px; gap: 20px; height: auto; overflow: visible;
   }
-  
-  /* Order: 1. Chat, 2. Settings (Top), 3. Generators (Bottom) */
-  .main-area { 
-    order: 1; 
-    height: 80dvh; /* Make chat big */
-    border-radius: 14px;
-    border: 1px solid var(--border);
-  }
-  
-  .sidebar { 
-    order: 2; 
-    display: flex; 
-    height: auto;
-  }
-
-  .right-panel {
-    order: 3; 
-    display: flex; 
-    height: auto;
-    margin-bottom: 40px;
-  }
-  
-  /* Touch Optimizations */
-  button { padding: 14px; font-size: 16px; } /* Bigger touch targets */
+  .main-area { order: 1; height: 80dvh; border-radius: 14px; border: 1px solid var(--border); }
+  .sidebar { order: 2; display: flex; height: auto; }
+  .right-panel { order: 3; display: flex; height: auto; margin-bottom: 40px; }
+  button { padding: 14px; font-size: 16px; } 
   .message { font-size: 16px; padding: 12px 16px; }
 }

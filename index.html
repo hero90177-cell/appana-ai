@@ -143,16 +143,25 @@
         <span id="net-status" class="status-dot white" title="Internet Connection">● Net</span>
         <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
         
-        <button id="delete-chat-btn" class="icon-btn" title="Clear Chat History" style="color:#ff4757;">🗑️</button>
+        <button id="select-mode-btn" class="icon-btn" title="Select Messages" style="font-size:16px; color:#1e90ff;">☑️</button>
+        <button id="delete-chat-btn" class="icon-btn" title="Delete" style="color:#ff4757;">🗑️</button>
         <button id="zen-mode-btn" class="icon-btn" title="Zen Mode">⛶</button>
       </div>
     </header>
+
+    <div id="selection-toolbar" class="hidden" style="background:#1e90ff; padding:10px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.2);">
+        <span id="selection-count">0 selected</span>
+        <div style="display:flex; gap:10px;">
+            <button id="select-all-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">Select All</button>
+            <button id="cancel-select-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">Cancel</button>
+        </div>
+    </div>
 
     <div id="chat-box" class="chat-box">
       <div class="message ai-message">
         <div class="msg-text">
           <strong>🦅 Appana AI:</strong>
-          <p>Welcome back! Select your <b>Class/Subject</b> from the left to begin.</p>
+          <p>Welcome! Upload an image/PDF, and I will <b>convert it to text</b> for you before sending.</p>
         </div>
       </div>
     </div>
@@ -164,14 +173,17 @@
     <div class="composer-area">
       <div id="file-preview" class="hidden">
         <span id="file-name"></span> <button id="remove-file">×</button>
-        <span id="ocr-status" style="font-size:10px; color:#1e90ff; margin-left:10px;"></span>
+        <span id="ocr-status" style="font-size:11px; color:#ffd700; margin-left:10px; font-weight:bold;"></span>
       </div>
       
       <form class="composer" onsubmit="return false;">
         <label for="file-upload" class="icon-btn">📎</label>
         <input type="file" id="file-upload" accept="image/*, .pdf, .txt" hidden>
+        
         <button id="voice-btn" class="icon-btn">🎤</button>
+        
         <input id="user-input" placeholder="Ask / Paste / Type..." autocomplete="off">
+        
         <button id="send-btn" class="send-btn">Send</button>
       </form>
     </div>
