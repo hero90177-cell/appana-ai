@@ -42,7 +42,7 @@ export async function onRequestPost({ request, env }) {
     if (env.APPANA_KV) {
       const rateKey = `rate:${uid}`;
       const count = Number(await env.APPANA_KV.get(rateKey)) || 0;
-      if (count >= 100) { // Increased limit slightly
+      if (count >= 100) { 
         return new Response(
           JSON.stringify({ reply: "⚠️ You are chatting too fast. Please wait 1 minute." }),
           { headers: { ...cors, "Content-Type": "application/json" } }
@@ -74,7 +74,7 @@ Instructions:
 
     const prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
     let reply = null;
-    let debugLog = []; // Stores errors to show user if everything fails
+    let debugLog = []; 
 
     /* ===============================
        4️⃣ GEMINI (Primary - Image + Text)
@@ -84,8 +84,9 @@ Instructions:
         const parts = [{ text: prompt }];
         if (image) parts.push({ inline_data: { mime_type: "image/jpeg", data: image } });
 
+        // FIX 1: Updated Model Name for Stability
         const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${env.GEMINI_API_KEY}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -94,7 +95,7 @@ Instructions:
         );
         const d = await r.json();
         
-        if (d.error) throw new Error(d.error.message); // Catch Google API errors
+        if (d.error) throw new Error(d.error.message); 
         reply = d?.candidates?.[0]?.content?.parts?.[0]?.text;
         
       } catch (e) {
@@ -110,6 +111,7 @@ Instructions:
        =============================== */
     if (!reply && !image && env.GROQ_API_KEY) {
       try {
+        // FIX 2: Updated to Llama 3.3 (Latest supported)
         const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -117,7 +119,7 @@ Instructions:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "llama3-8b-8192",
+            model: "llama-3.3-70b-versatile", 
             messages: [{ role: "user", content: prompt }],
           }),
         });
@@ -135,16 +137,21 @@ Instructions:
        =============================== */
     if (!reply && !image && env.COHERE_API_KEY) {
       try {
+        // FIX 3: Updated to 'command-r-08-2024' (Newest supported)
         const r = await fetch("https://api.cohere.com/v1/chat", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${env.COHERE_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ model: "command-r", message, preamble: SYSTEM_PROMPT }),
+          body: JSON.stringify({ 
+              model: "command-r-08-2024", 
+              message, 
+              preamble: SYSTEM_PROMPT 
+          }),
         });
         const d = await r.json();
-        if (d.message) throw new Error(d.message); // Cohere errors
+        if (d.message) throw new Error(d.message); 
         reply = d?.text;
       } catch (e) {
         console.error("Cohere Error:", e);
@@ -157,8 +164,9 @@ Instructions:
        =============================== */
     if (!reply && !image && env.HF_API_KEY) {
       try {
+        // FIX 4: Updated URL to 'router.huggingface.co'
         const r = await fetch(
-          "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3",
+          "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3",
           {
             method: "POST",
             headers: {
@@ -181,7 +189,6 @@ Instructions:
        8️⃣ FINAL RESPONSE OR ERROR REPORT
        =============================== */
     if (!reply) {
-      // If ALL failed, send the Debug Log to the user so they know WHY.
       return new Response(
         JSON.stringify({ 
           reply: "⚠️ **System Diagnosis:**\nAll AI brains failed. Here is why:\n\n" + debugLog.join("\n") + "\n\n💡 _Check your Cloudflare 'Settings > Variables' to fix the keys._"
@@ -214,5 +221,5 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-        }
-      
+}
+  
