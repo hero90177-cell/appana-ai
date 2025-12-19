@@ -10,24 +10,26 @@
 
 * { box-sizing: border-box; }
 
-/* FIX 1: Use 100dvh. This fixes the "Send Button" being hidden on phones */
 body {
   margin: 0;
   background: linear-gradient(180deg, #060611 0%, #0b0b12 100%);
   color: #e8eefb;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  /* ✅ FIX: Mobile Height Issue */
   height: 100vh;
   height: 100dvh; 
   overflow: hidden;
+  /* ✅ FIX: Base Font Size Increased */
+  font-size: 16px; 
 }
 
-/* FIX 2: This removes the mysterious "Blue X" button */
+/* ✅ FEATURE: Helper to hide elements dynamically */
 .hidden { display: none !important; }
 
 /* LAYOUT */
 .app-container { 
   display: grid; 
-  grid-template-columns: 260px 1fr 280px; 
+  grid-template-columns: 280px 1fr 300px; /* ✅ FIX: Slightly wider panels */
   gap: 16px; 
   padding: 16px; 
   height: 100%; 
@@ -41,7 +43,7 @@ body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 16px;
+  padding: 18px; /* ✅ FIX: More breathing room */
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -63,56 +65,64 @@ body {
 /* BRAND */
 .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border); }
 .logo-wrap {
-  width: 48px; height: 48px;
+  width: 50px; height: 50px; /* ✅ FIX: Bigger Logo */
   background: radial-gradient(circle, #102a55, #050b18);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid rgba(30,144,255,0.3);
 }
-.logo-wrap img { width: 30px; height: 30px; }
-.brand-text h1 { margin: 0; font-size: 18px; color: var(--accent); letter-spacing: 0.5px; }
-.brand-text small { font-size: 11px; color: var(--muted); }
+.logo-wrap img { width: 32px; height: 32px; }
+.brand-text h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 0.5px; } /* ✅ FIX: Bigger Text */
+.brand-text small { font-size: 12px; color: var(--muted); }
 
 /* WIDGETS */
-.wisdom-widget { background: var(--glass); padding: 10px; border-radius: 8px; border-left: 3px solid var(--accent-2); font-size: 13px; font-style: italic; color: #ddd; }
-.stats-panel { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; font-size: 14px; }
-.tool-card { background: var(--glass); padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
-.tool-card h3 { margin: 0 0 10px 0; color: var(--accent); font-size: 14px; }
+.wisdom-widget { 
+    background: var(--glass); padding: 12px; border-radius: 8px; 
+    border-left: 3px solid var(--accent-2); font-size: 14px; font-style: italic; color: #ddd; 
+}
+.stats-panel { 
+    background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; 
+    display: flex; flex-direction: column; gap: 6px; font-size: 15px; /* ✅ FIX: Bigger Stats */
+}
+.tool-card { background: var(--glass); padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
+.tool-card h3 { margin: 0 0 10px 0; color: var(--accent); font-size: 16px; }
 
 /* INPUTS & BUTTONS */
 select, input {
-  width: 100%; padding: 10px;
+  width: 100%; padding: 12px; /* ✅ FIX: Easier to tap */
   background: rgba(0,0,0,0.3);
   border: 1px solid var(--border);
   border-radius: 8px; color: white;
   margin-top: 5px;
+  font-size: 15px; 
 }
 button {
-  cursor: pointer; border: none; padding: 10px; border-radius: 8px;
+  cursor: pointer; border: none; padding: 12px; border-radius: 8px;
   background: linear-gradient(90deg, var(--accent), #7bd1ff);
   color: #02102a; font-weight: 700;
   transition: 0.2s;
+  font-size: 14px;
 }
 button:hover { filter: brightness(1.1); }
-.small-btns { display: flex; gap: 5px; margin-top: 10px; }
-.small-btns button { font-size: 12px; padding: 8px; flex: 1; }
-.grid-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 5px; }
-.grid-btns button { font-size: 12px; padding: 6px; }
-.full-btn { width: 100%; margin-top: 5px; }
-.danger-btn { background: #ff4757; color: white; width: 100%; margin-top: 10px; }
-.icon-btn { background: transparent; color: var(--muted); font-size: 18px; padding: 5px; }
+.small-btns { display: flex; gap: 8px; margin-top: 10px; }
+.small-btns button { font-size: 13px; padding: 10px; flex: 1; }
+.grid-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 5px; }
+.grid-btns button { font-size: 13px; padding: 8px; }
+.full-btn { width: 100%; margin-top: 8px; }
+.danger-btn { background: #ff4757; color: white; width: 100%; margin-top: 12px; }
+.icon-btn { background: transparent; color: var(--muted); font-size: 20px; padding: 8px; }
 
 /* CHAT AREA */
 .chat-header {
-  padding: 14px; border-bottom: 1px solid var(--border);
+  padding: 16px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   background: rgba(0,0,0,0.2);
 }
-.chat-header h2 { margin: 0; font-size: 16px; color: var(--accent); }
+.chat-header h2 { margin: 0; font-size: 18px; color: var(--accent); }
 
 /* STATUS DOTS */
 .status-dot { 
-  font-size: 12px; 
+  font-size: 13px; 
   margin-right: 12px; 
   font-weight: 600; 
   display: inline-flex;
@@ -122,10 +132,10 @@ button:hover { filter: brightness(1.1); }
 .status-dot.green { color: #2ecc71; text-shadow: 0 0 6px rgba(46, 204, 113, 0.4); }
 .status-dot.white { color: #ffffff; opacity: 0.6; }
 
-.chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
 /* MESSAGES */
-.message { max-width: 85%; padding: 12px 16px; border-radius: 14px; line-height: 1.5; font-size: 15px; }
+.message { max-width: 85%; padding: 14px 18px; border-radius: 14px; line-height: 1.6; font-size: 16px; } /* ✅ FIX: Readable Text */
 .ai-message {
   align-self: flex-start;
   background: linear-gradient(90deg, rgba(30,144,255,0.08), rgba(20,40,80,0.05));
@@ -140,53 +150,32 @@ button:hover { filter: brightness(1.1); }
   color: #fff;
   border-bottom-right-radius: 2px;
 }
-.msg-text strong { display: block; margin-bottom: 4px; font-size: 12px; opacity: 0.7; }
+.msg-text strong { display: block; margin-bottom: 4px; font-size: 13px; opacity: 0.7; }
 
 /* COMPOSER */
-.composer-area { padding: 14px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); }
-.composer { display: flex; gap: 10px; align-items: center; }
-.composer input { border-radius: 24px; padding: 12px 16px; }
-.send-btn { border-radius: 24px; padding: 10px 20px; }
+.composer-area { padding: 16px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); }
+.composer { display: flex; gap: 12px; align-items: center; }
+.composer input { border-radius: 24px; padding: 14px 18px; font-size: 16px; }
+.send-btn { border-radius: 24px; padding: 12px 24px; font-size: 15px; }
+
+/* ✅ FEATURE: Chapter Tracker & Weakness Styles */
+.chapter-item { 
+    display: flex; justify-content: space-between; padding: 8px; 
+    border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; 
+}
+.chapter-item.done { text-decoration: line-through; color: #444; }
+
+.weakness-tag {
+    color: #ff4757; font-weight: bold; border-bottom: 1px dashed #ff4757; cursor: help;
+}
+
+/* ✅ FEATURE: Analytics Modal (Popup) */
+#analytics-modal.hidden { display: none !important; }
+/* Note: The modal HTML is styled inline in index.html to ensure it sits on top, but basic reset here */
 
 /* TIMER */
-.timer-display { font-size: 32px; font-family: monospace; text-align: center; color: var(--accent); margin-bottom: 5px; text-shadow: 0 0 10px rgba(30,144,255,0.3); }
-.timer-controls { display: flex; gap: 5px; }
-
-/* FIX 3: MOBILE LAYOUT - SHOW EVERYTHING */
-@media (max-width: 900px) {
-  body { overflow: auto; height: auto; } /* Allow scrolling on phone */
-  
-  .app-container { 
-    grid-template-columns: 1fr; 
-    display: flex;
-    flex-direction: column; /* Stack them vertically */
-    padding: 10px;
-    gap: 15px;
-    height: auto;
-    overflow: visible;
-  }
-  
-  /* Order: 1. Chat, 2. Settings (Top), 3. Generators (Bottom) */
-  .main-area { 
-    order: 1; 
-    height: 85dvh; /* Make chat big */
-    border-radius: 14px;
-    border: 1px solid var(--border);
-  }
-  
-  .sidebar { 
-    order: 2; /* Show Sidebar BELOW chat */
-    display: flex; /* UNHIDE IT */
-    height: auto;
-  }
-
-  .right-panel {
-    order: 3; /* Show Generators BELOW Sidebar */
-    display: flex; /* UNHIDE IT */
-    height: auto;
-    margin-bottom: 30px;
-  }
-}
+.timer-display { font-size: 36px; font-family: monospace; text-align: center; color: var(--accent); margin-bottom: 5px; text-shadow: 0 0 10px rgba(30,144,255,0.3); }
+.timer-controls { display: flex; gap: 8px; }
 
 /* INSTALL BUTTON STYLE */
 .install-btn {
@@ -196,10 +185,51 @@ button:hover { filter: brightness(1.1); }
   box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
   margin-bottom: 15px;
   animation: pulse 2s infinite;
+  padding: 12px; font-size: 14px;
 }
 
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.03); }
   100% { transform: scale(1); }
+}
+
+/* MOBILE LAYOUT */
+@media (max-width: 900px) {
+  body { overflow: auto; height: auto; } /* Allow scrolling on phone */
+  
+  .app-container { 
+    grid-template-columns: 1fr; 
+    display: flex;
+    flex-direction: column; /* Stack them vertically */
+    padding: 12px;
+    gap: 20px;
+    height: auto;
+    overflow: visible;
+  }
+  
+  /* Order: 1. Chat, 2. Settings (Top), 3. Generators (Bottom) */
+  .main-area { 
+    order: 1; 
+    height: 80dvh; /* Make chat big */
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+  
+  .sidebar { 
+    order: 2; 
+    display: flex; 
+    height: auto;
+  }
+
+  .right-panel {
+    order: 3; 
+    display: flex; 
+    height: auto;
+    margin-bottom: 40px;
+  }
+  
+  /* Touch Optimizations */
+  button { padding: 14px; font-size: 16px; } /* Bigger touch targets */
+  .message { font-size: 16px; padding: 12px 16px; }
 }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0b12">
-  <title>Appana AI — Ultra Study Mode</title>
+  <title>Appana AI — Ultra Study Mentor</title>
   
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="/manifest.json">
@@ -13,6 +13,15 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <script>
+      // PDF Worker Setup
+      var pdfjsLib = window['pdfjs-dist/build/pdf'];
+      if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
 </head>
 <body>
 
@@ -36,36 +45,43 @@
 
     <div class="stats-panel">
       <div class="stat-row">
-        <span>🏆 Rank: <strong id="user-rank">Novice</strong></span>
+        <span>🏆 Rank: <strong id="user-rank" style="color:#ffd700">Novice</strong></span>
       </div>
       <div class="stat-row">
-        <span>🔥 Streak: <strong id="streak">0</strong></span>
+        <span>⚡ XP: <strong id="user-xp">0</strong></span>
       </div>
+      <div class="stat-row">
+        <span>🔥 Streak: <strong id="streak">0 Days</strong></span>
+      </div>
+      <button id="view-analytics-btn" class="full-btn" style="margin-top:5px; font-size:11px; background:rgba(255,255,255,0.1);">📊 View Study Stats</button>
     </div>
 
     <section class="controls">
       <button id="install-btn" class="install-btn hidden">📲 Install App</button>
 
-      <label>Target Exam / Course
+      <label>Answer Mode
+        <select id="exam-mode-selector">
+          <option value="normal">Standard Chat</option>
+          <option value="2marks">2 Marks (Very Short)</option>
+          <option value="5marks">5 Marks (Paragraph)</option>
+          <option value="8marks">8 Marks (Detailed Essay)</option>
+          <option value="teacher">👨‍🏫 Strict Teacher</option>
+        </select>
+      </label>
+
+      <label>Target Exam
         <select id="subject-selector">
-          <optgroup label="School: Class 9 & 10">
-            <option>Class 9 (All Subjects)</option>
-            <option>Class 10 (Maths & Science)</option>
-            <option>Class 10 (SST & English)</option>
-          </optgroup>
-          <optgroup label="School: Class 11 & 12">
-            <option>Class 11 Science (PCM/B)</option>
-            <option>Class 11 Commerce (With Maths)</option>
-            <option>Class 11 Commerce (Without Maths)</option>
-            <option>Class 11 Arts</option>
-            <option>Class 12 Science (PCM/B)</option>
+          <optgroup label="School">
+            <option>Class 9</option>
+            <option>Class 10</option>
+            <option>Class 11 Science</option>
+            <option>Class 12 Science</option>
             <option>Class 12 Commerce</option>
-            <option>Class 12 Arts</option>
           </optgroup>
-          <optgroup label="Entrance Exams">
-            <option>JEE Mains / Advanced</option>
-            <option>NEET (UG)</option>
-            <option>CUET (UG)</option>
+          <optgroup label="Entrance">
+            <option>JEE Mains</option>
+            <option>NEET</option>
+            <option>UPSC</option>
             <option>CA Foundation</option>
           </optgroup>
         </select>
@@ -74,19 +90,17 @@
       <label>Language
         <select id="language-selector">
           <option>English</option>
-          <option>Hinglish (Indian Mix)</option>
+          <option>Hinglish</option>
           <option>Hindi</option>
-          <option>Bengali</option>
           <option>Tamil</option>
+          <option>Bengali</option>
           <option>Marathi</option>
-          <option>Gujarati</option>
         </select>
       </label>
 
       <div class="small-btns">
         <button id="login-btn">🔐 Login</button>
         <button id="logout-btn" class="hidden">🚪 Logout</button>
-        <button id="backup-btn">☁ Backup</button>
       </div>
     </section>
   </aside>
@@ -95,7 +109,7 @@
     <header class="chat-header">
       <div>
         <h2>Study Chat</h2>
-        <small>AI Mentor (Eagle Mode 🦅)</small>
+        <small id="chat-subtitle">AI Mentor (Encrypted 🔒)</small>
       </div>
       
       <div id="mini-timer" class="hidden" style="background:#0f1220; padding:4px 10px; border-radius:12px; border:1px solid #1e90ff; display:flex; align-items:center; gap:8px;">
@@ -106,7 +120,6 @@
       <div class="header-actions">
         <span id="net-status" class="status-dot green" title="Internet Connection">● Net</span>
         <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
-        
         <button id="zen-mode-btn" class="icon-btn" title="Zen Mode">⛶</button>
       </div>
     </header>
@@ -115,23 +128,28 @@
       <div class="message ai-message">
         <div class="msg-text">
           <strong>🦅 Appana AI:</strong>
-          <p>Hello! I am your Eagle Mentor. Ask me anything, upload a photo, or say <b>"Start timer 30 mins"</b> to begin!</p>
+          <p>Welcome! I can now read <b>Images & PDFs</b>. Upload a paper or say <b>"Start timer"</b>.</p>
         </div>
       </div>
+    </div>
+
+    <div id="weakness-alert" class="hidden" style="background: rgba(255,71,87,0.1); border-top:1px solid #ff4757; color:#ff4757; padding:5px 15px; font-size:12px;">
+      ⚠️ Weak Topic Detected: <span id="weak-topic-name"></span>. <button id="fix-weakness-btn" style="background:none; border:none; text-decoration:underline; color:white; cursor:pointer;">Take Quiz?</button>
     </div>
 
     <div class="composer-area">
       <div id="file-preview" class="hidden">
         <span id="file-name"></span> <button id="remove-file">×</button>
+        <span id="ocr-status" style="font-size:10px; color:#1e90ff; margin-left:10px;"></span>
       </div>
       
       <form class="composer" onsubmit="return false;">
         <label for="file-upload" class="icon-btn">📎</label>
-        <input type="file" id="file-upload" accept="image/*, .txt, .pdf" hidden>
+        <input type="file" id="file-upload" accept="image/*, .pdf, .txt" hidden>
         
         <button id="voice-btn" class="icon-btn">🎤</button>
         
-        <input id="user-input" placeholder="Ask your doubt..." autocomplete="off">
+        <input id="user-input" placeholder="Ask / Paste / Type..." autocomplete="off">
         
         <button id="send-btn" class="send-btn">Send</button>
       </form>
@@ -141,24 +159,42 @@
   <aside class="right-panel">
     <section class="tool-card">
       <h3>⚡ Generators</h3>
-      <input id="topic-input" placeholder="Topic (e.g. GST)">
+      <input id="topic-input" placeholder="Topic (e.g. Newton's Laws)">
       <div class="grid-btns">
         <button id="gen-notes-btn">Notes</button>
         <button id="gen-mcq-btn">Quiz</button>
         <button id="gen-imp-btn">Imp Qs</button>
+        <button id="gen-passage-btn" style="grid-column: span 3; margin-top:5px; background: rgba(255,255,255,0.1);">📝 Generate Passage/Essay</button>
       </div>
     </section>
 
     <section class="tool-card">
-      <h3>⚙ Actions</h3>
-      <button id="pdf-btn" class="full-btn">Download PDF</button>
+      <h3>⚙ Tools</h3>
+      <button id="pdf-btn" class="full-btn">Download Chat PDF</button>
       <div class="toggles">
         <label><input type="checkbox" id="tts-toggle" checked> Voice Reply</label>
       </div>
-      <button id="clear-db-btn" class="danger-btn">Reset App</button>
-    </section>
+      
+      <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+        <h4 style="margin:0 0 5px 0; font-size:13px; color:#9aa4b2;">Chapter Tracker</h4>
+        <div style="display:flex; gap:5px;">
+           <input id="chapter-name" placeholder="Chapter Name" style="font-size:12px;">
+           <button id="mark-chapter-btn" style="width:auto; padding:0 10px;">✔</button>
+        </div>
+        <div id="chapter-list" style="max-height:100px; overflow-y:auto; margin-top:5px; font-size:11px; color:#aaa;"></div>
+      </div>
 
+      <button id="clear-db-btn" class="danger-btn">Reset All Data</button>
+    </section>
   </aside>
+</div>
+
+<div id="analytics-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999; display:flex; justify-content:center; align-items:center;">
+    <div style="background:#0f1220; padding:20px; border-radius:15px; border:1px solid #1e90ff; width:90%; max-width:500px;">
+        <h2 style="color:#1e90ff; margin-top:0;">📊 Study Analytics</h2>
+        <div id="analytics-content" style="color:#e8eefb; font-size:14px; line-height:1.6;"></div>
+        <button onclick="document.getElementById('analytics-modal').classList.add('hidden')" class="full-btn" style="margin-top:15px;">Close</button>
+    </div>
 </div>
 
 <script type="module" src="script.js"></script>
