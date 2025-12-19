@@ -15,6 +15,8 @@ import {
 let STATE = { xp: 0, streak: 1, timerId: null, recognition: null };
 const el = id => document.getElementById(id);
 
+const API_URL = "https://510dce19.appana-ai.pages.dev/api/ai-chat"; // Full URL for mobile & desktop
+
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
   checkConnection();
@@ -76,7 +78,7 @@ async function handleSend(manualText = null) {
   appendMsg("You", t + (file ? ` [Attached: ${file.name}]` : ""), "user-message");
   
   if (!manualText) inputEl.value = "";
-  
+
   // 2. Convert Image to Base64 (FIX for Uploads)
   let imageData = null;
   if (file && file.type.startsWith("image/")) {
@@ -123,7 +125,7 @@ function readFileAsBase64(file) {
 function triggerAI(msg, imageData) {
   appendMsg("🦅 Appana AI", "Thinking...", "ai-message", "temp");
 
-  fetch("/api/ai-chat", {
+  fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -138,14 +140,13 @@ function triggerAI(msg, imageData) {
     .then(d => {
       document.getElementById("temp")?.remove();
       updateStatus("api-status", !!d.reply);
-      
       const replyText = d.reply || d.error || "No response.";
       appendMsg("🦅 Appana AI", replyText, "ai-message");
-      
       if (el("tts-toggle").checked && d.reply) speak(d.reply);
       saveToCloud(msg, d.reply);
     })
-    .catch(() => {
+    .catch(err => {
+      console.error("AI request failed:", err);
       document.getElementById("temp")?.remove();
       updateStatus("api-status", false);
       appendMsg("🦅 Appana AI", "Offline. Check API Key or Connection.", "ai-message");
@@ -249,14 +250,15 @@ function updateStatus(id, ok) {
 async function checkConnection() {
   updateStatus("net-status", navigator.onLine);
   try {
-    const r = await fetch("/api/ai-chat", {
+    const r = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "ping" })
     });
     const d = await r.json();
     updateStatus("api-status", d.status === "ok");
-  } catch {
+  } catch (err) {
+    console.error("Connection check failed:", err);
     updateStatus("api-status", false);
   }
 }
