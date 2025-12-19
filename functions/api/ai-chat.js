@@ -8,36 +8,55 @@ export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
 
-    // 1. Health Check (Checks ALL 4 Keys)
+    /* ===============================
+       1️⃣ HEALTH CHECK
+       =============================== */
     if (body.type === "ping") {
-      const ok = !!(env.GEMINI_API_KEY || env.GROQ_API_KEY || env.COHERE_API_KEY || env.HF_API_KEY);
-      return new Response(JSON.stringify({ status: ok ? "ok" : "fail" }), {
-        headers: { "Content-Type": "application/json", ...cors },
-      });
+      const ok = !!(
+        env.GEMINI_API_KEY ||
+        env.GROQ_API_KEY ||
+        env.COHERE_API_KEY ||
+        env.HF_API_KEY
+      );
+
+      return new Response(
+        JSON.stringify({ status: ok ? "ok" : "fail" }),
+        { headers: { ...cors, "Content-Type": "application/json" } }
+      );
     }
 
     const {
       message = "",
-      image = null, // New: Image Data
+      image = null,
       subject = "General",
       language = "English",
       uid = "guest",
     } = body;
 
-    // 2. Rate Limit
-    if (env.APPANA_KV) {
-        const rateKey = `rate:${uid}`;
-        const count = Number((await env.APPANA_KV.get(rateKey)) || 0);
-        if (count > 50) {
-            return new Response(
-                JSON.stringify({ error: "Rate limit exceeded." }),
-                { status: 429, headers: { ...cors, "Content-Type": "application/json" } }
-            );
-        }
-        await env.APPANA_KV.put(rateKey, count + 1, { expirationTtl: 60 });
+    if (!message && !image) {
+      throw new Error("No input provided");
     }
 
-    // 3. Load Memory
+    /* ===============================
+       2️⃣ RATE LIMIT (KV)
+       =============================== */
+    if (env.APPANA_KV) {
+      const rateKey = `rate:${uid}`;
+      const count = Number(await env.APPANA_KV.get(rateKey)) || 0;
+
+      if (count >= 50) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded." }),
+          { status: 429, headers: { ...cors, "Content-Type": "application/json" } }
+        );
+      }
+
+      await env.APPANA_KV.put(rateKey, count + 1, { expirationTtl: 60 });
+    }
+
+    /* ===============================
+       3️⃣ LOAD MEMORY
+       =============================== */
     let memory = "";
     if (uid !== "guest" && env.APPANA_KV) {
       memory = (await env.APPANA_KV.get(`mem:${uid}`)) || "";
@@ -45,28 +64,33 @@ export async function onRequestPost({ request, env }) {
 
     const SYSTEM_PROMPT = `
 You are Appana AI 🦅, an Indian Study Mentor.
-Subject: ${subject} | Language: ${language}
-Previous Context: ${memory}
+Subject: ${subject}
+Language: ${language}
+Previous Context:
+${memory}
 
 Instructions:
-- Be encouraging and exam-focused.
-- If the user sends an image, analyze it for study questions.
+- Be encouraging and exam-focused
+- If an image is sent, analyze it carefully
 `;
 
-    const prompt = SYSTEM_PROMPT + "\n\nStudent: " + message;
-    let reply = "";
+    const prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
+    let reply = null;
 
-    // 4. AI CASCADE (ALL 4 BRAINS)
-
-    // --- Attempt 1: Gemini (Supports Images) ---
+    /* ===============================
+       4️⃣ GEMINI (IMAGE + TEXT)
+       =============================== */
     if (env.GEMINI_API_KEY) {
       try {
         const parts = [{ text: prompt }];
-        // Add image if present
+
         if (image) {
-            parts.push({
-                inline_data: { mime_type: "image/jpeg", data: image }
-            });
+          parts.push({
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: image,
+            },
+          });
         }
 
         const r = await fetch(
@@ -74,54 +98,74 @@ Instructions:
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: parts }] }),
+            body: JSON.stringify({
+              contents: [{ parts }],
+            }),
           }
         );
+
         const d = await r.json();
-        reply = d?.candidates?.[0]?.content?.parts?.[0]?.text;
-      } catch (e) { console.log("Gemini failed", e); }
+        reply = d?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      } catch (e) {
+        console.log("❌ Gemini failed", e);
+      }
     }
 
-    // --- Attempt 2: Groq (Text Only) ---
+    /* ===============================
+       5️⃣ GROQ (TEXT ONLY)
+       =============================== */
     if (!reply && !image && env.GROQ_API_KEY) {
       try {
-        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${env.GROQ_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "llama3-8b-8192",
-            messages: [{ role: "user", content: prompt }],
-          }),
-        });
+        const r = await fetch(
+          "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${env.GROQ_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "llama3-8b-8192",
+              messages: [{ role: "user", content: prompt }],
+            }),
+          }
+        );
+
         const d = await r.json();
-        reply = d?.choices?.[0]?.message?.content;
-      } catch (e) { console.log("Groq failed", e); }
+        reply = d?.choices?.[0]?.message?.content || null;
+      } catch (e) {
+        console.log("❌ Groq failed", e);
+      }
     }
 
-    // --- Attempt 3: Cohere (Text Only) ---
+    /* ===============================
+       6️⃣ COHERE (TEXT ONLY)
+       =============================== */
     if (!reply && !image && env.COHERE_API_KEY) {
       try {
         const r = await fetch("https://api.cohere.com/v1/chat", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${env.COHERE_API_KEY}`,
+            Authorization: `Bearer ${env.COHERE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: "command-r",
-            message: message,
+            message,
             preamble: SYSTEM_PROMPT,
           }),
         });
+
         const d = await r.json();
-        reply = d?.text;
-      } catch (e) { console.log("Cohere failed", e); }
+        reply = d?.text || null;
+      } catch (e) {
+        console.log("❌ Cohere failed", e);
+      }
     }
 
-    // --- Attempt 4: HuggingFace (Text Only) ---
+    /* ===============================
+       7️⃣ HUGGING FACE (TEXT ONLY)
+       =============================== */
     if (!reply && !image && env.HF_API_KEY) {
       try {
         const r = await fetch(
@@ -129,34 +173,56 @@ Instructions:
           {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${env.HF_API_KEY}`,
+              Authorization: `Bearer ${env.HF_API_KEY}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ inputs: `[INST] ${prompt} [/INST]` }),
+            body: JSON.stringify({
+              inputs: `<s>[INST] ${prompt} [/INST]`,
+            }),
           }
         );
+
         const d = await r.json();
-        reply = Array.isArray(d) ? d[0]?.generated_text : "";
-      } catch (e) { console.log("HF failed", e); }
+
+        if (Array.isArray(d)) {
+          reply = d[0]?.generated_text || null;
+        }
+      } catch (e) {
+        console.log("❌ HuggingFace failed", e);
+      }
     }
 
-    if (!reply) throw new Error("All AI Brains are offline.");
+    if (!reply) {
+      throw new Error("All AI Brains are offline.");
+    }
 
-    // 5. Save Memory
+    /* ===============================
+       8️⃣ SAVE MEMORY
+       =============================== */
     if (uid !== "guest" && env.APPANA_KV && !image) {
-      const updated = (memory + `\nUser: ${message}\nAI: ${reply}`).split("\n").slice(-20).join("\n");
-      await env.APPANA_KV.put(`mem:${uid}`, updated, { expirationTtl: 86400 * 7 }); 
+      const updated = (
+        memory +
+        `\nUser: ${message}\nAI: ${reply}`
+      )
+        .split("\n")
+        .slice(-20)
+        .join("\n");
+
+      await env.APPANA_KV.put(`mem:${uid}`, updated, {
+        expirationTtl: 86400 * 7,
+      });
     }
 
-    return new Response(JSON.stringify({ reply }), {
-      headers: { "Content-Type": "application/json", ...cors },
-    });
+    return new Response(
+      JSON.stringify({ reply }),
+      { headers: { ...cors, "Content-Type": "application/json" } }
+    );
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...cors },
-    });
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+    );
   }
 }
 
@@ -168,5 +234,4 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-        }
-          
+  }
