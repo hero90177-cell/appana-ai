@@ -1,5 +1,5 @@
-// ✅ FIX: Bumped version to v4
-const CACHE = "appana-cf-v4";
+// ✅ FIX: Bumped version to v5 to FORCE update
+const CACHE = "appana-cf-v5";
 const ASSETS = [
   "/",
   "/index.html",
@@ -25,6 +25,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
 
+  // Network First for API (AI Chat)
   if (url.pathname.startsWith("/api/")) {
     e.respondWith(
       fetch(e.request).catch(() =>
@@ -35,6 +36,7 @@ self.addEventListener("fetch", e => {
       )
     );
   } else {
+    // Cache First for Files (HTML/JS/CSS)
     e.respondWith(
       caches.match(e.request).then(r => r || fetch(e.request))
     );

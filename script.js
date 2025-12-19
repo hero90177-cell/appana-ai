@@ -20,34 +20,31 @@ const API_URL = "/api/ai-chat";
 let deferredPrompt; 
 
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Load Data
   loadLocalData();
-  
-  // 2. Check Net & API Health (Fixes White Dot Issue)
   checkSystemHealth();
   
-  // 3. Setup UI
   setupVoiceInput();
   renderChapters();
   updateGamificationUI();
-  updateMotivation(); // Show a quote
+  updateMotivation();
 
-  // Event Listeners
+  // PWA Install
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e;
     const btn = el('install-btn');
     if(btn) { btn.classList.remove('hidden'); btn.onclick = () => deferredPrompt.prompt(); }
   });
 
+  // Basic UI
   el("send-btn").onclick = () => handleSend();
   el("user-input").onkeypress = e => e.key === "Enter" && handleSend();
-  
   el("login-btn").onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
   el("logout-btn").onclick = () => { signOut(auth); el("chat-box").innerHTML = ""; appendMsg("🦅 Appana AI", "Logged out.", "ai-message"); };
-
+  
+  // Tools
   el("zen-mode-btn").onclick = () => el("app").classList.toggle("zen-active");
-  el("delete-chat-btn").onclick = clearChatHistory; // ✅ NEW: Trash Button Logic
-
+  el("delete-chat-btn").onclick = clearChatHistory; // ✅ TRASH BUTTON LINKED
+  
   // Generators
   el("gen-notes-btn").onclick = () => runGenerator('notes');
   el("gen-mcq-btn").onclick = () => runGenerator('mcq');
@@ -58,18 +55,23 @@ document.addEventListener("DOMContentLoaded", () => {
   if(el("stop-timer-btn")) el("stop-timer-btn").onclick = stopTimer;
   el("clear-db-btn").onclick = () => { if(confirm("This wipes EVERYTHING (XP, Settings). Sure?")) hardReset(); };
 
-  // Settings Save (Fixes "Forgot Subject" issue)
+  // Settings
   el("subject-selector").onchange = saveData;
   el("language-selector").onchange = saveData;
   el("exam-mode-selector").onchange = saveData;
 
-  // File Upload
+  // File Upload - OPTIMIZED
   el("file-upload").onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
       el("file-preview").classList.remove("hidden");
       el("file-name").innerText = file.name;
-      el("ocr-status").innerText = file.type.startsWith('image/') ? "Image loaded" : "PDF loaded";
+      // Show different status based on type
+      if (file.type.startsWith('image/')) {
+        el("ocr-status").innerText = "Image Ready (AI Vision) 📸";
+      } else if (file.type === 'application/pdf') {
+        el("ocr-status").innerText = "PDF Ready (Text Extract) 📄";
+      }
     }
   };
   el("remove-file").onclick = () => {
@@ -78,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el("ocr-status").innerText = "";
   };
 
+  // Chapter & Analytics
   el("mark-chapter-btn").onclick = () => {
     const val = el("chapter-name").value.trim();
     if(val) {
@@ -86,7 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
         saveData(); renderChapters();
     }
   };
-
   el("view-analytics-btn").onclick = showAnalytics;
   el("fix-weakness-btn").onclick = () => {
       const topic = el("weak-topic-name").innerText;
@@ -96,15 +98,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ---------------- NETWORK & HEALTH ---------------- */
-
-// ✅ NEW: Ping API to check if it's alive (Turns Dot Green)
 async function checkSystemHealth() {
-    // 1. Check Internet
     updateStatus("net-status", navigator.onLine);
     window.addEventListener("online", () => updateStatus("net-status", true));
     window.addEventListener("offline", () => updateStatus("net-status", false));
 
-    // 2. Check AI Brain
     try {
         const res = await fetch(API_URL, {
             method: "POST",
@@ -112,23 +110,14 @@ async function checkSystemHealth() {
             body: JSON.stringify({ type: "ping" })
         });
         const data = await res.json();
-        if(data.status === "ok") {
-            updateStatus("api-status", true); // Turn Green!
-        } else {
-            updateStatus("api-status", false); // Stay White
-        }
+        updateStatus("api-status", data.status === "ok");
     } catch (e) {
-        console.warn("API Offline:", e);
         updateStatus("api-status", false);
     }
 }
-
-function updateStatus(id, ok) { 
-    el(id).className = `status-dot ${ok?"green":"white"}`; 
-}
+function updateStatus(id, ok) { el(id).className = `status-dot ${ok?"green":"white"}`; }
 
 /* ---------------- CORE CHAT & LOGIC ---------------- */
-
 async function handleSend(manualText = null) {
   const inputEl = el("user-input");
   const t = manualText || inputEl.value.trim();
@@ -140,19 +129,25 @@ async function handleSend(manualText = null) {
   appendMsg("You", t + (file ? ` [File: ${file.name}]` : ""), "user-message");
   if (!manualText) inputEl.value = "";
 
-  // OCR / PDF Logic
   let extractedContext = "";
-  if (file) {
-      el("ocr-status").innerText = "Reading... ⏳";
+
+  // 1. PDF Handling (Local Extraction)
+  if (file && file.type === "application/pdf") {
+      el("ocr-status").innerText = "Reading PDF... ⏳";
       try {
-          if (file.type.startsWith("image/")) extractedContext = await extractTextFromImage(file);
-          else if (file.type === "application/pdf") extractedContext = await extractTextFromPDF(file);
+          extractedContext = await extractTextFromPDF(file);
+          el("ocr-status").innerText = "PDF Read Successfully ✅";
       } catch (e) {
           console.error(e);
-          appendMsg("System", "Could not read file. Sending raw.", "ai-message");
+          appendMsg("System", "PDF too large or unreadable. Try a smaller file.", "ai-message");
+          el("ocr-status").innerText = "Failed ❌";
+          return; // Stop if PDF fails
       }
-      el("ocr-status").innerText = "Done!";
   }
+
+  // 2. Image Handling (Direct to AI - No Local Processing)
+  // We DO NOT extract text from images locally anymore. It crashes phones.
+  // We send the raw image to Gemini.
 
   el("file-upload").value = "";
   el("file-preview").classList.add("hidden");
@@ -169,42 +164,44 @@ async function handleSend(manualText = null) {
   triggerAI(t, extractedContext, file);
 }
 
-// ✅ NEW: Trash Button Functionality
+// ✅ ROBUST DELETE FUNCTION
 async function clearChatHistory() {
     if(!confirm("Are you sure you want to delete the chat history?")) return;
     
-    // 1. Clear UI
+    // 1. Clear Screen
     el("chat-box").innerHTML = "";
     
-    // 2. Clear Cloud (if logged in)
+    // 2. Clear Cloud
     if(auth.currentUser) {
         try {
             const q = query(collection(db, "users", auth.currentUser.uid, "chats"));
             const snapshot = await getDocs(q);
+            
+            // Batch delete
             const batch = writeBatch(db);
             snapshot.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            appendMsg("System", "History deleted from cloud.", "ai-message");
+            
+            alert("✅ History successfully deleted from Cloud.");
+            appendMsg("System", "Chat history wiped.", "ai-message");
         } catch(e) {
-            console.error("Delete failed", e);
+            console.error(e);
+            alert("❌ Error deleting: " + e.message + "\nCheck your Internet or Permissions.");
         }
     } else {
-        appendMsg("System", "Chat cleared locally.", "ai-message");
+        alert("✅ Local chat cleared.");
+        appendMsg("System", "Chat cleared (Local).", "ai-message");
     }
 }
 
-// OCR & PDF
-async function extractTextFromImage(file) {
-    if(!window.Tesseract) return "";
-    const { data: { text } } = await Tesseract.recognize(file, 'eng');
-    return text;
-}
+// PDF Reader (Optimized)
 async function extractTextFromPDF(file) {
     if(!window.pdfjsLib) return "";
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
     let text = "";
-    const maxPages = Math.min(pdf.numPages, 3);
+    // Limit to 4 pages to save memory
+    const maxPages = Math.min(pdf.numPages, 4);
     for(let i=1; i<=maxPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
@@ -217,18 +214,19 @@ async function extractTextFromPDF(file) {
 function triggerAI(msg, extractedText, file) {
   appendMsg("🦅 Appana AI", "Thinking...", "ai-message", "temp");
 
-  let imageData = null;
+  // If Image, convert to Base64 for Gemini
   if(file && file.type.startsWith("image/")) {
      const reader = new FileReader();
-     reader.onload = () => sendRequest(reader.result.split(',')[1]);
+     reader.onload = () => sendRequest(reader.result.split(',')[1]); // Send Base64
      reader.readAsDataURL(file);
   } else {
       sendRequest(null);
   }
 
   function sendRequest(imgBase64) {
+    // Combine PDF text with User Question
     const fullMessage = extractedText 
-        ? `[File Context]: ${extractedText}\n\n[Question]: ${msg}` 
+        ? `[PDF Content]: ${extractedText}\n\n[Student Question]: ${msg}` 
         : msg;
 
     fetch(API_URL, {
@@ -236,7 +234,7 @@ function triggerAI(msg, extractedText, file) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: fullMessage,
-        image: imgBase64, 
+        image: imgBase64, // Send image directly to Cloudflare -> Gemini
         subject: el("subject-selector").value || "General",
         language: el("language-selector").value,
         examMode: el("exam-mode-selector").value, 
@@ -249,7 +247,7 @@ function triggerAI(msg, extractedText, file) {
       const reply = d.reply || d.error || "No response.";
       
       appendMsg("🦅 Appana AI", reply, "ai-message");
-      updateStatus("api-status", true); // Confirm AI is alive
+      updateStatus("api-status", true);
       
       if (el("tts-toggle").checked) speak(reply);
       
@@ -266,7 +264,6 @@ function triggerAI(msg, extractedText, file) {
 }
 
 /* ---------------- UTILS ---------------- */
-
 function encryptData(text) { return CryptoJS.AES.encrypt(text, ENC_SECRET).toString(); }
 function decryptData(ciphertext) {
     try { return CryptoJS.AES.decrypt(ciphertext, ENC_SECRET).toString(CryptoJS.enc.Utf8); } 
@@ -296,7 +293,6 @@ function updateXP(amount) {
     STATE.xp += amount;
     el("user-xp").innerText = STATE.xp;
     
-    // Simple Rank Logic
     let rank = "Novice";
     if(STATE.xp > 500) rank = "Scholar";
     if(STATE.xp > 2000) rank = "Topper";
@@ -321,27 +317,20 @@ function saveData() {
     }));
 }
 
-// ✅ FIX: Enhanced Load Function for Persistence
 function loadLocalData() {
-    // 1. Load Stats
     const s = JSON.parse(localStorage.getItem("appana_v2"));
     if(s) { 
         STATE = {...STATE, ...s}; 
         el("user-xp").innerText = STATE.xp;
         el("streak").innerText = STATE.streak + " Days";
     }
-
-    // 2. Load Preferences (Subject, Lang)
     const p = JSON.parse(localStorage.getItem("appana_pref"));
     if(p) {
         if(p.sub) {
-            // Try to set value, if it fails (because option doesn't exist yet), wait a tick
             const dropdown = el("subject-selector");
             dropdown.value = p.sub; 
-            if(dropdown.value !== p.sub) {
-                // If the exact value isn't found, default to General, but don't crash
-                console.log("Saved subject not found in list, defaulting.");
-            }
+            // Fallback if option missing (e.g. old data)
+            if(dropdown.value !== p.sub) dropdown.value = "General"; 
         }
         if(p.lang) el("language-selector").value = p.lang;
         if(p.mode) el("exam-mode-selector").value = p.mode;
@@ -388,7 +377,6 @@ function updateMotivation() {
     el("daily-quote").innerText = quotes[Math.floor(Math.random() * quotes.length)];
 }
 
-// Analytics & Generators (Helpers)
 function runGenerator(type) {
     const topic = el("topic-input").value || "General";
     const mode = el("exam-mode-selector").value;
