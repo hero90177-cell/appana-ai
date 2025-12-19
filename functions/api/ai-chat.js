@@ -9,18 +9,19 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
 
     /* ===============================
-       1️⃣ HEALTH CHECK
+       1️⃣ HEALTH CHECK & KEY DIAGNOSIS
        =============================== */
     if (body.type === "ping") {
-      const ok = !!(
-        env.GEMINI_API_KEY ||
-        env.GROQ_API_KEY ||
-        env.COHERE_API_KEY ||
-        env.HF_API_KEY
-      );
-
+      const keys = {
+        gemini: !!env.GEMINI_API_KEY,
+        groq: !!env.GROQ_API_KEY,
+        cohere: !!env.COHERE_API_KEY,
+        hf: !!env.HF_API_KEY
+      };
+      
+      const ok = Object.values(keys).some(k => k);
       return new Response(
-        JSON.stringify({ status: ok ? "ok" : "fail" }),
+        JSON.stringify({ status: ok ? "ok" : "fail", keys_detected: keys }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
@@ -36,18 +37,17 @@ export async function onRequestPost({ request, env }) {
     if (!message && !image) throw new Error("No input provided");
 
     /* ===============================
-       2️⃣ RATE LIMIT
+       2️⃣ RATE LIMIT (KV)
        =============================== */
     if (env.APPANA_KV) {
       const rateKey = `rate:${uid}`;
       const count = Number(await env.APPANA_KV.get(rateKey)) || 0;
-
-      if (count >= 50)
+      if (count >= 100) { // Increased limit slightly
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded." }),
-          { status: 429, headers: { ...cors, "Content-Type": "application/json" } }
+          JSON.stringify({ reply: "⚠️ You are chatting too fast. Please wait 1 minute." }),
+          { headers: { ...cors, "Content-Type": "application/json" } }
         );
-
+      }
       await env.APPANA_KV.put(rateKey, count + 1, { expirationTtl: 60 });
     }
 
@@ -67,24 +67,22 @@ Previous Context:
 ${memory}
 
 Instructions:
-- Be encouraging and exam-focused
-- If an image is sent, analyze it carefully
+- Be encouraging and exam-focused.
+- If an image is sent, analyze it carefully.
+- Keep answers concise and helpful.
 `;
 
     const prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
     let reply = null;
+    let debugLog = []; // Stores errors to show user if everything fails
 
     /* ===============================
-       4️⃣ GEMINI (IMAGE + TEXT)
+       4️⃣ GEMINI (Primary - Image + Text)
        =============================== */
     if (env.GEMINI_API_KEY) {
       try {
         const parts = [{ text: prompt }];
-        if (image) {
-          parts.push({
-            inline_data: { mime_type: "image/jpeg", data: image },
-          });
-        }
+        if (image) parts.push({ inline_data: { mime_type: "image/jpeg", data: image } });
 
         const r = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
@@ -95,36 +93,45 @@ Instructions:
           }
         );
         const d = await r.json();
-        reply = d?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-      } catch (e) { console.log("❌ Gemini failed", e); }
+        
+        if (d.error) throw new Error(d.error.message); // Catch Google API errors
+        reply = d?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+      } catch (e) {
+        console.error("Gemini Error:", e);
+        debugLog.push(`❌ Gemini: ${e.message || "Unknown Error"}`);
+      }
+    } else {
+      debugLog.push("⚠️ Gemini: No API Key found");
     }
 
     /* ===============================
-       5️⃣ GROQ (TEXT ONLY)
+       5️⃣ GROQ (Fallback 1 - Text Only)
        =============================== */
     if (!reply && !image && env.GROQ_API_KEY) {
       try {
-        const r = await fetch(
-          "https://api.groq.com/openai/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${env.GROQ_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "llama3-8b-8192",
-              messages: [{ role: "user", content: prompt }],
-            }),
-          }
-        );
+        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.GROQ_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "llama3-8b-8192",
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
         const d = await r.json();
-        reply = d?.choices?.[0]?.message?.content || null;
-      } catch (e) { console.log("❌ Groq failed", e); }
+        if (d.error) throw new Error(d.error.message);
+        reply = d?.choices?.[0]?.message?.content;
+      } catch (e) {
+        console.error("Groq Error:", e);
+        debugLog.push(`❌ Groq: ${e.message}`);
+      }
     }
 
     /* ===============================
-       6️⃣ COHERE (TEXT ONLY)
+       6️⃣ COHERE (Fallback 2 - Text Only)
        =============================== */
     if (!reply && !image && env.COHERE_API_KEY) {
       try {
@@ -137,12 +144,16 @@ Instructions:
           body: JSON.stringify({ model: "command-r", message, preamble: SYSTEM_PROMPT }),
         });
         const d = await r.json();
-        reply = d?.text || null;
-      } catch (e) { console.log("❌ Cohere failed", e); }
+        if (d.message) throw new Error(d.message); // Cohere errors
+        reply = d?.text;
+      } catch (e) {
+        console.error("Cohere Error:", e);
+        debugLog.push(`❌ Cohere: ${e.message}`);
+      }
     }
 
     /* ===============================
-       7️⃣ HUGGING FACE (TEXT ONLY)
+       7️⃣ HUGGING FACE (Fallback 3 - Text Only)
        =============================== */
     if (!reply && !image && env.HF_API_KEY) {
       try {
@@ -158,15 +169,28 @@ Instructions:
           }
         );
         const d = await r.json();
-        if (Array.isArray(d)) reply = d[0]?.generated_text || null;
-      } catch (e) { console.log("❌ HuggingFace failed", e); }
+        if (d.error) throw new Error(d.error);
+        if (Array.isArray(d)) reply = d[0]?.generated_text;
+      } catch (e) {
+        console.error("HF Error:", e);
+        debugLog.push(`❌ HuggingFace: ${e.message}`);
+      }
     }
 
-    if (!reply) throw new Error("All AI Brains are offline.");
-
     /* ===============================
-       8️⃣ SAVE MEMORY
+       8️⃣ FINAL RESPONSE OR ERROR REPORT
        =============================== */
+    if (!reply) {
+      // If ALL failed, send the Debug Log to the user so they know WHY.
+      return new Response(
+        JSON.stringify({ 
+          reply: "⚠️ **System Diagnosis:**\nAll AI brains failed. Here is why:\n\n" + debugLog.join("\n") + "\n\n💡 _Check your Cloudflare 'Settings > Variables' to fix the keys._"
+        }),
+        { headers: { ...cors, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Success! Save Memory & Return
     if (uid !== "guest" && env.APPANA_KV && !image) {
       const updated = (memory + `\nUser: ${message}\nAI: ${reply}`).split("\n").slice(-20).join("\n");
       await env.APPANA_KV.put(`mem:${uid}`, updated, { expirationTtl: 86400 * 7 });
@@ -175,7 +199,10 @@ Instructions:
     return new Response(JSON.stringify({ reply }), { headers: { ...cors, "Content-Type": "application/json" } });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({ reply: "🔥 Critical System Error: " + err.message }), 
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+    );
   }
 }
 
@@ -187,5 +214,5 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-                        }
-          
+        }
+      
