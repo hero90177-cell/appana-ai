@@ -15,7 +15,8 @@ import {
 let STATE = { xp: 0, streak: 1, timerId: null, recognition: null };
 const el = id => document.getElementById(id);
 
-const API_URL = "https://510dce19.appana-ai.pages.dev/api/ai-chat"; // Full URL for mobile & desktop
+// ✅ FIX: Use relative path. This automatically finds the correct backend on Cloudflare.
+const API_URL = "/api/ai-chat";
 
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
