@@ -17,17 +17,33 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let STATE = { xp: 0, streak: 1, timerId: null, recognition: null };
+let deferredPrompt; // For PWA Install
 const el = id => document.getElementById(id);
-
-// ✅ FIX: Relative path for Cloudflare
 const API_URL = "/api/ai-chat";
 
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
+  loadPreferences(); // ✅ Feature: Loads Subject & Language
   checkConnection();
   setupVoiceInput();
 
-  // Listeners
+  // ✅ Feature: PWA Install Button Logic
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = el('install-btn');
+    if(btn) {
+        btn.classList.remove('hidden');
+        btn.onclick = () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((result) => {
+                if (result.outcome === 'accepted') btn.classList.add('hidden');
+                deferredPrompt = null;
+            });
+        };
+    }
+  });
+
   window.addEventListener("online", () => updateStatus("net-status", true));
   window.addEventListener("offline", () => updateStatus("net-status", false));
 
@@ -37,22 +53,23 @@ document.addEventListener("DOMContentLoaded", () => {
   el("login-btn").onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
   el("logout-btn").onclick = () => {
       signOut(auth);
-      el("chat-box").innerHTML = ""; // Clear chat on logout
+      el("chat-box").innerHTML = ""; 
       appendMsg("🦅 Appana AI", "Logged out. See you soon!", "ai-message");
   };
 
   el("zen-mode-btn").onclick = () => el("app").classList.toggle("zen-active");
 
-  // Generators & Actions
   el("gen-notes-btn").onclick = () => runGenerator('notes');
   el("gen-mcq-btn").onclick = () => runGenerator('mcq');
   el("gen-imp-btn").onclick = () => runGenerator('imp');
   el("pdf-btn").onclick = downloadPDF;
   
-  // Timer Stop
   if(el("stop-timer-btn")) el("stop-timer-btn").onclick = stopTimer;
 
-  // File Upload
+  // ✅ Feature: Save Settings when changed
+  el("subject-selector").onchange = savePreferences;
+  el("language-selector").onchange = savePreferences;
+
   el("file-upload").onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -83,49 +100,36 @@ async function handleSend(manualText = null) {
   
   if (!t && !file) return;
 
-  // 1. Show User Message
   appendMsg("You", t + (file ? ` [Attached: ${file.name}]` : ""), "user-message");
-  
   if (!manualText) inputEl.value = "";
 
-  // 2. Convert Image to Base64 (FIX for Uploads)
   let imageData = null;
   if (file && file.type.startsWith("image/")) {
-      try {
-          imageData = await readFileAsBase64(file);
-      } catch(e) { console.error("File error", e); }
+      try { imageData = await readFileAsBase64(file); } 
+      catch(e) { console.error("File error", e); }
   }
 
-  // Clear file input
   el("file-upload").value = "";
   el("file-preview").classList.add("hidden");
 
-  // 3. MAGIC TIMER COMMANDS (FIX for Timer)
+  // Timer Feature
   const lowerMsg = t.toLowerCase();
-  if (lowerMsg.includes("start timer") || lowerMsg.includes("set timer")) {
+  if (lowerMsg.includes("start timer")) {
     const minutes = lowerMsg.match(/\d+/) ? parseInt(lowerMsg.match(/\d+/)[0]) : 25;
     startTimer(minutes);
     appendMsg("🦅 Appana AI", `Timer started for ${minutes} mins!`, "ai-message");
     saveToCloud(t, `Started timer for ${minutes} mins`);
     return;
   }
-  if (lowerMsg.includes("stop timer")) {
-    stopTimer();
-    appendMsg("🦅 Appana AI", "Timer stopped.", "ai-message");
-    return;
-  }
+  if (lowerMsg.includes("stop timer")) stopTimer();
   
-  // 4. Trigger AI
   triggerAI(t, imageData);
 }
 
 function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => {
-            const base64 = reader.result.split(',')[1]; // Remove data url prefix
-            resolve(base64);
-        };
+        reader.onload = () => resolve(reader.result.split(',')[1]);
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
@@ -139,7 +143,7 @@ function triggerAI(msg, imageData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       message: msg,
-      image: imageData, // Send image data
+      image: imageData, 
       subject: el("subject-selector").value,
       language: el("language-selector").value,
       uid: auth.currentUser?.uid || "guest"
@@ -155,31 +159,25 @@ function triggerAI(msg, imageData) {
       saveToCloud(msg, d.reply);
     })
     .catch(err => {
-      console.error("AI request failed:", err);
       document.getElementById("temp")?.remove();
       updateStatus("api-status", false);
       appendMsg("🦅 Appana AI", "Offline. Check API Key or Connection.", "ai-message");
     });
 }
 
-/* ---------------- DATABASE MEMORY (FIXED) ---------------- */
+/* ---------------- MEMORY & SETTINGS ---------------- */
 
-// ✅ This function loads old chats when you login
+// ✅ Feature: Chat History
 async function loadChatHistory(user) {
-    if (!user) return;
-    
-    // Don't duplicate if already loaded
-    if(el("chat-box").childElementCount > 1) return; 
-
+    if (!user || el("chat-box").childElementCount > 1) return; 
     appendMsg("🦅 Appana AI", "Loading your past chats...", "ai-message", "loading-msg");
 
     try {
         const q = query(
             collection(db, "users", user.uid, "chats"),
-            orderBy("ts", "asc"), // Oldest first
+            orderBy("ts", "asc"), 
             limit(50)
         );
-        
         const querySnapshot = await getDocs(q);
         document.getElementById("loading-msg")?.remove();
 
@@ -191,22 +189,35 @@ async function loadChatHistory(user) {
                 if (data.u) appendMsg("You", data.u, "user-message");
                 if (data.a) appendMsg("🦅 Appana AI", data.a, "ai-message");
             });
-            // Scroll to bottom after loading
             setTimeout(() => el("chat-box").scrollTop = el("chat-box").scrollHeight, 500);
         }
-    } catch (e) {
-        console.error("Error loading chats:", e);
-    }
+    } catch (e) { console.error("Error loading chats:", e); }
 }
 
 function saveToCloud(u, a) {
   if (!auth.currentUser || !a) return;
-  // Create a new document with auto-ID so we don't overwrite old chats
   const chatRef = doc(collection(db, "users", auth.currentUser.uid, "chats"));
   setDoc(chatRef, { u, a, ts: serverTimestamp() }).catch(e => console.error("Save failed", e));
 }
 
-/* ---------------- FEATURES ---------------- */
+// ✅ Feature: Save Subject/Lang to LocalStorage
+function savePreferences() {
+    localStorage.setItem("appana_pref", JSON.stringify({
+        subject: el("subject-selector").value,
+        lang: el("language-selector").value
+    }));
+}
+
+// ✅ Feature: Load Subject/Lang on startup
+function loadPreferences() {
+    const p = JSON.parse(localStorage.getItem("appana_pref"));
+    if (p) {
+        if (p.subject) el("subject-selector").value = p.subject;
+        if (p.lang) el("language-selector").value = p.lang;
+    }
+}
+
+/* ---------------- UTILS ---------------- */
 
 function runGenerator(type) {
     const topic = el("topic-input").value || el("subject-selector").value;
@@ -222,20 +233,13 @@ function startTimer(min = 25) {
     clearInterval(STATE.timerId);
     el("mini-timer").classList.remove("hidden");
     el("mini-timer").style.display = "flex";
-
     let seconds = min * 60;
-    
     STATE.timerId = setInterval(() => {
         seconds--;
         const m = Math.floor(seconds / 60).toString().padStart(2, '0');
         const s = (seconds % 60).toString().padStart(2, '0');
         el("timer-display").innerText = `${m}:${s}`;
-        
-        if (seconds <= 0) {
-            stopTimer();
-            alert("Time's up! Take a break.");
-            speak("Time is up.");
-        }
+        if (seconds <= 0) { stopTimer(); alert("Time's up!"); speak("Time is up."); }
     }, 1000);
 }
 
@@ -271,9 +275,7 @@ function setupVoiceInput() {
             handleSend();
         };
         el("voice-btn").onclick = () => STATE.recognition.start();
-    } else {
-        el("voice-btn").style.display = "none";
-    }
+    } else { el("voice-btn").style.display = "none"; }
 }
 
 function speak(text) {
@@ -283,7 +285,6 @@ function speak(text) {
     window.speechSynthesis.speak(u);
 }
 
-/* ---------------- UTILS ---------------- */
 function appendMsg(who, txt, cls, id) {
   const d = document.createElement("div");
   d.className = `message ${cls}`;
@@ -303,17 +304,10 @@ function updateStatus(id, ok) {
 async function checkConnection() {
   updateStatus("net-status", navigator.onLine);
   try {
-    const r = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "ping" })
-    });
+    const r = await fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "ping" }) });
     const d = await r.json();
     updateStatus("api-status", d.status === "ok");
-  } catch (err) {
-    console.error("Connection check failed:", err);
-    updateStatus("api-status", false);
-  }
+  } catch (err) { updateStatus("api-status", false); }
 }
 
 function loadState() {
@@ -321,12 +315,11 @@ function loadState() {
   if (s) STATE = { ...STATE, ...JSON.parse(s) };
 }
 
-// ✅ FIX: Trigger Chat History Load on Login
 onAuthStateChanged(auth, u => {
   el("login-btn").classList.toggle("hidden", !!u);
   el("logout-btn").classList.toggle("hidden", !u);
   if (u) {
       appendMsg("🦅 Appana AI", `Welcome back!`, "ai-message");
-      loadChatHistory(u);
+      loadChatHistory(u); // Triggers memory load
   }
 });

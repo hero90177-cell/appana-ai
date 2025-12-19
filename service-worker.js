@@ -1,5 +1,5 @@
-// ✅ FIX: Bumped version to v3 to force browser to get new script.js
-const CACHE = "appana-cf-v3";
+// ✅ FIX: Bumped version to v4
+const CACHE = "appana-cf-v4";
 const ASSETS = [
   "/",
   "/index.html",
@@ -25,7 +25,6 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
 
-  // Don't cache API calls
   if (url.pathname.startsWith("/api/")) {
     e.respondWith(
       fetch(e.request).catch(() =>

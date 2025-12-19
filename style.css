@@ -187,3 +187,19 @@ button:hover { filter: brightness(1.1); }
     margin-bottom: 30px;
   }
 }
+
+/* INSTALL BUTTON STYLE */
+.install-btn {
+  background: linear-gradient(90deg, #00b894, #00cec9);
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
+  margin-bottom: 15px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
