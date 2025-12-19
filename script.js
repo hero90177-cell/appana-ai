@@ -30,14 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
   updateGamificationUI();
   updateMotivation();
 
-  // PWA Install Logic
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e;
     const btn = el('install-btn');
     if(btn) { btn.classList.remove('hidden'); btn.onclick = () => deferredPrompt.prompt(); }
   });
 
-  // UI Event Listeners
   el("send-btn").onclick = () => handleSend();
   el("user-input").onkeypress = e => e.key === "Enter" && handleSend();
   
@@ -58,12 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
   el("gen-imp-btn").onclick = () => runGenerator('imp');
   el("gen-passage-btn").onclick = () => runGenerator('passage');
   
-  // Tools
   el("pdf-btn").onclick = downloadPDF;
   if(el("stop-timer-btn")) el("stop-timer-btn").onclick = stopTimer;
   el("clear-db-btn").onclick = () => { if(confirm("This wipes EVERYTHING (XP, Settings). Sure?")) hardReset(); };
 
-  // Settings
   el("subject-selector").onchange = saveData;
   el("language-selector").onchange = saveData;
   el("exam-mode-selector").onchange = saveData;
@@ -75,12 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
       el("file-preview").classList.remove("hidden");
       el("file-name").innerText = file.name;
       el("ocr-status").innerText = "Converting to text... ⏳";
-      
-      // RUN OCR OR PDF EXTRACT
       const text = await processFileAndInsertText(file);
-      
       if(text) {
-          el("user-input").value = text; // Put text in input box
+          el("user-input").value = text;
           el("ocr-status").innerText = "Converted! Check input box. ✅";
       } else {
           el("ocr-status").innerText = "Could not convert. Sending as file.";
@@ -92,10 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
     el("file-upload").value = "";
     el("file-preview").classList.add("hidden");
     el("ocr-status").innerText = "";
-    el("user-input").value = ""; // Clear extracted text
+    el("user-input").value = "";
   };
 
-  // Checkbox & Analytics Triggers
   el("mark-chapter-btn").onclick = () => {
     const val = el("chapter-name").value.trim();
     if(val) {
@@ -117,8 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
 function toggleSelectMode() {
     STATE.selectMode = !STATE.selectMode;
     STATE.selectedIds.clear();
-    
-    // Show/Hide Toolbar
     if(STATE.selectMode) {
         el("selection-toolbar").classList.remove("hidden");
         el("chat-box").classList.add("select-mode-active");
@@ -126,8 +116,6 @@ function toggleSelectMode() {
         el("selection-toolbar").classList.add("hidden");
         el("chat-box").classList.remove("select-mode-active");
     }
-    
-    // Toggle checkboxes on existing messages
     document.querySelectorAll(".message").forEach(msg => {
         if(STATE.selectMode) addCheckboxToMsg(msg);
         else removeCheckboxFromMsg(msg);
@@ -165,36 +153,39 @@ function updateSelectionUI() {
     el("selection-count").innerText = `${STATE.selectedIds.size} selected`;
 }
 
-// ✅ MAIN DELETE HANDLER
 async function handleDeleteAction() {
     if(STATE.selectMode && STATE.selectedIds.size > 0) {
         if(!confirm(`Delete ${STATE.selectedIds.size} messages?`)) return;
         await deleteSelectedMessages();
     } else {
-        // If not in select mode, standard "Delete All"
         if(!confirm("Are you sure you want to delete EVERYTHING?")) return;
         await clearChatHistory();
     }
 }
 
 async function deleteSelectedMessages() {
-    // 1. UI Remove
+    // 1. Remove from UI immediately
     STATE.selectedIds.forEach(id => {
         const m = document.getElementById(id);
         if(m) m.remove();
     });
     
-    // 2. Cloud Remove
+    // 2. Delete from Cloud
     if(auth.currentUser) {
-        const batch = writeBatch(db);
-        STATE.selectedIds.forEach(id => {
-            const ref = doc(db, "users", auth.currentUser.uid, "chats", id);
-            batch.delete(ref);
-        });
-        await batch.commit();
-        appendMsg("System", "Selected messages deleted.", "ai-message");
+        try {
+            const batch = writeBatch(db);
+            STATE.selectedIds.forEach(id => {
+                const ref = doc(db, "users", auth.currentUser.uid, "chats", id);
+                batch.delete(ref);
+            });
+            await batch.commit();
+            appendMsg("System", "Selected messages deleted from Cloud.", "ai-message");
+        } catch(e) {
+            console.error("Delete Failed:", e);
+            alert("Error deleting from Cloud: " + e.message);
+        }
     }
-    toggleSelectMode(); // Exit mode
+    toggleSelectMode();
 }
 
 async function clearChatHistory() {
@@ -210,7 +201,7 @@ async function clearChatHistory() {
                 count++;
             });
             await batch.commit();
-            alert(`✅ Deleted ${count} messages.`);
+            alert(`✅ Deleted ${count} messages from Cloud.`);
         } catch(e) {
             console.error(e);
             alert("Error deleting: " + e.message);
@@ -225,14 +216,11 @@ async function clearChatHistory() {
 async function processFileAndInsertText(file) {
     try {
         let text = "";
-        
-        // IMAGE OCR (Client-side Tesseract for Pre-send editing)
         if (file.type.startsWith('image/')) {
             if(!window.Tesseract) throw new Error("OCR Engine missing");
             const { data } = await Tesseract.recognize(file, 'eng');
             text = data.text;
         } 
-        // PDF EXTRACT
         else if (file.type === 'application/pdf') {
             if(!window.pdfjsLib) throw new Error("PDF Engine missing");
             const arrayBuffer = await file.arrayBuffer();
@@ -244,7 +232,6 @@ async function processFileAndInsertText(file) {
                 text += content.items.map(item => item.str).join(" ") + "\n";
             }
         }
-        
         return text;
     } catch (e) {
         console.error("Conversion failed:", e);
@@ -267,11 +254,9 @@ async function handleSend(manualText = null) {
   
   if (!manualText) inputEl.value = "";
   
-  // Clear file inputs after sending
   el("file-upload").value = "";
   el("file-preview").classList.add("hidden");
 
-  // Timer Command
   if (t.toLowerCase().includes("start timer")) {
     const min = t.match(/\d+/) ? parseInt(t.match(/\d+/)[0]) : 25;
     startTimer(min);
@@ -287,7 +272,6 @@ function triggerAI(msg, file, userMsgId) {
   const aiMsgId = "ai_" + Date.now();
   appendMsg("🦅 Appana AI", "Thinking...", "ai-message", aiMsgId);
 
-  // Send image to AI if present (even if we extracted text) for context
   if(file && file.type.startsWith("image/")) {
      const reader = new FileReader();
      reader.onload = () => sendRequest(reader.result.split(',')[1]); 
@@ -301,7 +285,7 @@ function triggerAI(msg, file, userMsgId) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: msg, // Contains extracted text if user kept it
+        message: msg,
         image: imgBase64,
         subject: el("subject-selector").value || "General",
         language: el("language-selector").value,
@@ -313,10 +297,8 @@ function triggerAI(msg, file, userMsgId) {
     .then(d => {
       const aiDiv = document.getElementById(aiMsgId);
       if(aiDiv) aiDiv.innerHTML = `<strong>🦅 Appana AI:</strong> ${marked.parse(d.reply || d.error)}`;
-      
       updateStatus("api-status", true);
       if (el("tts-toggle").checked) speak(d.reply);
-      
       saveToCloud(msg, d.reply, userMsgId, aiMsgId);
       updateXP(10);
       detectWeakness(d.reply, msg);
@@ -372,37 +354,39 @@ function updateXP(amount) {
     el("user-xp").innerText = STATE.xp;
     saveData();
 }
-
 function updateGamificationUI() {
     el("user-xp").innerText = STATE.xp;
     el("streak").innerText = STATE.streak + " Days";
-    
     let rank = "Novice";
     if(STATE.xp > 500) rank = "Scholar";
     if(STATE.xp > 2000) rank = "Topper";
     if(STATE.xp > 5000) rank = "🦅 Legend";
     el("user-rank").innerText = rank;
 }
-
 function saveData() { localStorage.setItem("appana_v2", JSON.stringify(STATE)); }
 function loadLocalData() {
     const s = JSON.parse(localStorage.getItem("appana_v2"));
     if(s) { STATE = {...STATE, ...s}; el("user-xp").innerText = STATE.xp; }
 }
-function hardReset() { localStorage.clear(); location.reload(); }
+function hardReset() { 
+    localStorage.clear(); 
+    if('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for(let registration of registrations) registration.unregister();
+        });
+    }
+    location.reload(); 
+}
 function appendMsg(who, txt, cls, id) {
   const d = document.createElement("div");
   d.className = `message ${cls}`;
   if(id) d.id = id;
   const html = marked.parse(txt);
   d.innerHTML = `<strong>${who}:</strong> ${html}`;
-  
   if(STATE.selectMode) addCheckboxToMsg(d);
-  
   el("chat-box").appendChild(d);
   el("chat-box").scrollTop = el("chat-box").scrollHeight;
 }
-
 function setupVoiceInput() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SR) {
@@ -412,29 +396,20 @@ function setupVoiceInput() {
         el("voice-btn").onclick = () => STATE.recognition.start();
     } else el("voice-btn").style.display = "none";
 }
-
 function speak(text) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text.replace(/[*#]/g, ''));
     u.lang = "en-IN";
     window.speechSynthesis.speak(u);
 }
-
 function updateMotivation() {
-    const quotes = [
-        "Padhai kar lo, future ban jayega.",
-        "Consistency is key.",
-        "Dream big, study hard.",
-        "Your only limit is your mind."
-    ];
+    const quotes = ["Padhai kar lo.", "Consistency is key.", "Dream big.", "Just do it."];
     el("daily-quote").innerText = quotes[Math.floor(Math.random() * quotes.length)];
 }
-
 function runGenerator(type) {
     const topic = el("topic-input").value || "General";
     handleSend(`Generate ${type} for ${topic}`);
 }
-
 function downloadPDF() {
     if (!window.jspdf) return alert("Loading...");
     const { jsPDF } = window.jspdf;
@@ -447,7 +422,6 @@ function downloadPDF() {
     });
     doc.save("notes.pdf");
 }
-
 function startTimer(min) {
     if(STATE.timerId) clearInterval(STATE.timerId);
     el("mini-timer").classList.remove("hidden");

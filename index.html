@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0b0b12">
   <title>Appana AI — Ultra Study Mentor</title>
   
@@ -26,7 +26,7 @@
 
 <div id="app" class="app-container">
 
-  <aside class="sidebar">
+  <aside id="section-menu" class="sidebar mobile-hidden">
     <header class="brand">
       <div class="logo-wrap">
         <img src="https://cdn-icons-png.flaticon.com/512/809/809052.png" alt="Eagle">
@@ -71,38 +71,17 @@
       <label>Target Exam / Class
         <select id="subject-selector">
           <option value="General" disabled selected>Select Your Goal...</option>
-          <optgroup label="School (CBSE/ICSE/State)">
-            <option>Class 6</option>
-            <option>Class 7</option>
-            <option>Class 8</option>
+          <optgroup label="School">
             <option>Class 9</option>
             <option>Class 10</option>
-          </optgroup>
-          <optgroup label="Higher Secondary">
-            <option>Class 11 Science (PCM)</option>
-            <option>Class 11 Science (PCB)</option>
-            <option>Class 11 Commerce</option>
-            <option>Class 11 Arts/Humanities</option>
-            <option>Class 12 Science (PCM)</option>
-            <option>Class 12 Science (PCB)</option>
+            <option>Class 11 Science</option>
+            <option>Class 12 Science</option>
             <option>Class 12 Commerce</option>
-            <option>Class 12 Arts/Humanities</option>
           </optgroup>
-          <optgroup label="Competitive Exams">
-            <option>JEE Mains & Advanced</option>
-            <option>NEET (Medical)</option>
-            <option>UPSC (Civil Services)</option>
-            <option>CA Foundation/Inter</option>
-            <option>CS (Company Secretary)</option>
-            <option>NDA (Defence)</option>
-            <option>CLAT (Law)</option>
-            <option>CUET (University)</option>
-            <option>SSC / Banking / Railways</option>
-          </optgroup>
-          <optgroup label="Skills & Others">
-            <option>Coding / Computer Science</option>
-            <option>English Speaking & Grammar</option>
-            <option>General Knowledge</option>
+          <optgroup label="Competitive">
+            <option>JEE Mains</option>
+            <option>NEET</option>
+            <option>UPSC</option>
           </optgroup>
         </select>
       </label>
@@ -110,13 +89,8 @@
       <label>Language
         <select id="language-selector">
           <option>English</option>
-          <option>Hinglish (Mix)</option>
+          <option>Hinglish</option>
           <option>Hindi</option>
-          <option>Tamil</option>
-          <option>Bengali</option>
-          <option>Marathi</option>
-          <option>Telugu</option>
-          <option>Gujarati</option>
         </select>
       </label>
 
@@ -127,7 +101,7 @@
     </section>
   </aside>
 
-  <main class="main-area">
+  <main id="section-chat" class="main-area">
     <header class="chat-header">
       <div>
         <h2>Study Chat</h2>
@@ -161,13 +135,13 @@
       <div class="message ai-message">
         <div class="msg-text">
           <strong>🦅 Appana AI:</strong>
-          <p>Welcome! Upload an image/PDF, and I will <b>convert it to text</b> for you before sending.</p>
+          <p>Welcome! Upload an image/PDF, and I will <b>convert it to text</b> for you.</p>
         </div>
       </div>
     </div>
 
     <div id="weakness-alert" class="hidden" style="background: rgba(255,71,87,0.1); border-top:1px solid #ff4757; color:#ff4757; padding:5px 15px; font-size:12px;">
-      ⚠️ Weak Topic Detected: <span id="weak-topic-name"></span>. <button id="fix-weakness-btn" style="background:none; border:none; text-decoration:underline; color:white; cursor:pointer;">Take Quiz?</button>
+      ⚠️ Weak Topic: <span id="weak-topic-name"></span>. <button id="fix-weakness-btn" style="background:none; border:none; text-decoration:underline; color:white; cursor:pointer;">Quiz?</button>
     </div>
 
     <div class="composer-area">
@@ -182,14 +156,14 @@
         
         <button id="voice-btn" class="icon-btn">🎤</button>
         
-        <input id="user-input" placeholder="Ask / Paste / Type..." autocomplete="off">
+        <input id="user-input" placeholder="Type here..." autocomplete="off">
         
         <button id="send-btn" class="send-btn">Send</button>
       </form>
     </div>
   </main>
 
-  <aside class="right-panel">
+  <aside id="section-tools" class="right-panel mobile-hidden">
     <section class="tool-card">
       <h3>⚡ Generators</h3>
       <input id="topic-input" placeholder="Topic (e.g. Gravity)">
@@ -197,7 +171,7 @@
         <button id="gen-notes-btn">Notes</button>
         <button id="gen-mcq-btn">Quiz</button>
         <button id="gen-imp-btn">Imp Qs</button>
-        <button id="gen-passage-btn" style="grid-column: span 3; margin-top:5px; background: rgba(255,255,255,0.1);">📝 Generate Passage</button>
+        <button id="gen-passage-btn" style="grid-column: span 3; margin-top:5px; background: rgba(255,255,255,0.1);">📝 Passage</button>
       </div>
     </section>
 
@@ -211,15 +185,28 @@
       <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
         <h4 style="margin:0 0 5px 0; font-size:13px; color:#9aa4b2;">Chapter Tracker</h4>
         <div style="display:flex; gap:5px;">
-           <input id="chapter-name" placeholder="Chapter Name" style="font-size:12px;">
+           <input id="chapter-name" placeholder="Name" style="font-size:12px;">
            <button id="mark-chapter-btn" style="width:auto; padding:0 10px;">✔</button>
         </div>
         <div id="chapter-list" style="max-height:100px; overflow-y:auto; margin-top:5px; font-size:11px; color:#aaa;"></div>
       </div>
 
-      <button id="clear-db-btn" class="danger-btn" style="opacity:0.6; font-size:11px;">⚠ Factory Reset App</button>
+      <button id="clear-db-btn" class="danger-btn" style="opacity:0.6; font-size:11px;">⚠ Factory Reset</button>
     </section>
   </aside>
+
+  <nav id="mobile-nav" class="mobile-nav">
+    <button class="nav-btn" onclick="switchMobileSection('menu')">
+        <span>☰</span> <small>Menu</small>
+    </button>
+    <button class="nav-btn active" onclick="switchMobileSection('chat')">
+        <span>💬</span> <small>Chat</small>
+    </button>
+    <button class="nav-btn" onclick="switchMobileSection('tools')">
+        <span>⚡</span> <small>Tools</small>
+    </button>
+  </nav>
+
 </div>
 
 <div id="analytics-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999; display:flex; justify-content:center; align-items:center;">
@@ -231,5 +218,20 @@
 </div>
 
 <script type="module" src="script.js"></script>
+<script>
+    window.switchMobileSection = function(section) {
+        // Hide all
+        document.getElementById('section-menu').classList.add('mobile-hidden');
+        document.getElementById('section-chat').classList.add('mobile-hidden');
+        document.getElementById('section-tools').classList.add('mobile-hidden');
+        
+        // Show selected
+        document.getElementById('section-' + section).classList.remove('mobile-hidden');
+        
+        // Update Buttons
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+</script>
 </body>
 </html>

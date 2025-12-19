@@ -1,5 +1,5 @@
-// ✅ FIX: Bumped to v7 to FORCE update
-const CACHE = "appana-cf-v7";
+// ✅ FIX: Bumped to v8 to FORCE update
+const CACHE = "appana-cf-v8";
 const ASSETS = [
   "/",
   "/index.html",
@@ -24,21 +24,9 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-
-  // Network First for API (AI Chat)
   if (url.pathname.startsWith("/api/")) {
-    e.respondWith(
-      fetch(e.request).catch(() =>
-        new Response(
-          JSON.stringify({ reply: "Offline. Connect to internet." }),
-          { headers: { "Content-Type": "application/json" } }
-        )
-      )
-    );
+    e.respondWith(fetch(e.request));
   } else {
-    // Cache First for Files (HTML/JS/CSS)
-    e.respondWith(
-      caches.match(e.request).then(r => r || fetch(e.request))
-    );
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
   }
 });
