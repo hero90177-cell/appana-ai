@@ -9,13 +9,17 @@ import {
   collection,
   doc,
   setDoc,
+  query,
+  orderBy,
+  limit,
+  getDocs,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let STATE = { xp: 0, streak: 1, timerId: null, recognition: null };
 const el = id => document.getElementById(id);
 
-// ✅ FIX: Use relative path. This automatically finds the correct backend on Cloudflare.
+// ✅ FIX: Relative path for Cloudflare
 const API_URL = "/api/ai-chat";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -31,7 +35,11 @@ document.addEventListener("DOMContentLoaded", () => {
   el("user-input").onkeypress = e => e.key === "Enter" && handleSend();
   
   el("login-btn").onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
-  el("logout-btn").onclick = () => signOut(auth);
+  el("logout-btn").onclick = () => {
+      signOut(auth);
+      el("chat-box").innerHTML = ""; // Clear chat on logout
+      appendMsg("🦅 Appana AI", "Logged out. See you soon!", "ai-message");
+  };
 
   el("zen-mode-btn").onclick = () => el("app").classList.toggle("zen-active");
 
@@ -154,6 +162,50 @@ function triggerAI(msg, imageData) {
     });
 }
 
+/* ---------------- DATABASE MEMORY (FIXED) ---------------- */
+
+// ✅ This function loads old chats when you login
+async function loadChatHistory(user) {
+    if (!user) return;
+    
+    // Don't duplicate if already loaded
+    if(el("chat-box").childElementCount > 1) return; 
+
+    appendMsg("🦅 Appana AI", "Loading your past chats...", "ai-message", "loading-msg");
+
+    try {
+        const q = query(
+            collection(db, "users", user.uid, "chats"),
+            orderBy("ts", "asc"), // Oldest first
+            limit(50)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        document.getElementById("loading-msg")?.remove();
+
+        if (querySnapshot.empty) {
+            appendMsg("🦅 Appana AI", "No previous chats found. Start a new topic!", "ai-message");
+        } else {
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.u) appendMsg("You", data.u, "user-message");
+                if (data.a) appendMsg("🦅 Appana AI", data.a, "ai-message");
+            });
+            // Scroll to bottom after loading
+            setTimeout(() => el("chat-box").scrollTop = el("chat-box").scrollHeight, 500);
+        }
+    } catch (e) {
+        console.error("Error loading chats:", e);
+    }
+}
+
+function saveToCloud(u, a) {
+  if (!auth.currentUser || !a) return;
+  // Create a new document with auto-ID so we don't overwrite old chats
+  const chatRef = doc(collection(db, "users", auth.currentUser.uid, "chats"));
+  setDoc(chatRef, { u, a, ts: serverTimestamp() }).catch(e => console.error("Save failed", e));
+}
+
 /* ---------------- FEATURES ---------------- */
 
 function runGenerator(type) {
@@ -269,12 +321,12 @@ function loadState() {
   if (s) STATE = { ...STATE, ...JSON.parse(s) };
 }
 
-function saveToCloud(u, a) {
-  if (!auth.currentUser || !a) return;
-  setDoc(doc(collection(db, "users", auth.currentUser.uid, "chats")), { u, a, ts: serverTimestamp() }).catch(() => {});
-}
-
+// ✅ FIX: Trigger Chat History Load on Login
 onAuthStateChanged(auth, u => {
   el("login-btn").classList.toggle("hidden", !!u);
   el("logout-btn").classList.toggle("hidden", !u);
+  if (u) {
+      appendMsg("🦅 Appana AI", `Welcome back!`, "ai-message");
+      loadChatHistory(u);
+  }
 });
