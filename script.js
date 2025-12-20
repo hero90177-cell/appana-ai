@@ -240,19 +240,36 @@ function triggerAI(msg, file, userMsgId) {
   } else req(null);
 }
 
+// ✅ FIXED: ADDED enc: true SO REFRESH WORKS
 function saveToCloud(u, a, uId, aId) {
   if (!auth.currentUser) return;
-  setDoc(doc(db, "users", auth.currentUser.uid, "chats", uId), { msg: encryptData(u), sender: "user", ts: serverTimestamp() });
-  setDoc(doc(db, "users", auth.currentUser.uid, "chats", aId), { msg: encryptData(a), sender: "ai", ts: serverTimestamp() });
+  setDoc(doc(db, "users", auth.currentUser.uid, "chats", uId), { 
+    msg: encryptData(u), 
+    sender: "user", 
+    ts: serverTimestamp(),
+    enc: true // MARK AS ENCRYPTED
+  });
+  setDoc(doc(db, "users", auth.currentUser.uid, "chats", aId), { 
+    msg: encryptData(a), 
+    sender: "ai", 
+    ts: serverTimestamp(),
+    enc: true // MARK AS ENCRYPTED
+  });
 }
 
+// ✅ FIXED: BETTER DECRYPTION LOGIC
 async function loadChatHistory(user) {
     if (!user || el("chat-box").childElementCount > 1) return; 
     const q = query(collection(db, "users", user.uid, "chats"), orderBy("ts", "asc"), limit(50));
     const snapshot = await getDocs(q);
     snapshot.forEach(d => {
         const data = d.data();
-        appendMsg(data.sender==="ai"?"🦅 Appana AI":"You", data.enc?decryptData(data.u||data.msg):(data.u||data.msg), data.sender==="ai"?"ai-message":"user-message", d.id);
+        let txt = data.u || data.msg;
+        // Check for flag OR if text looks like ciphertext (starts with U2F)
+        if (data.enc || (txt && typeof txt === 'string' && txt.startsWith('U2FsdGVk'))) {
+            txt = decryptData(txt);
+        }
+        appendMsg(data.sender==="ai"?"🦅 Appana AI":"You", txt, data.sender==="ai"?"ai-message":"user-message", d.id);
     });
 }
 
