@@ -42,13 +42,15 @@ document.addEventListener("DOMContentLoaded", () => {
   el("login-btn").onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
   el("logout-btn").onclick = () => { signOut(auth); el("chat-box").innerHTML = ""; appendMsg("🦅 Appana AI", "Logged out.", "ai-message"); };
 
-  el("zen-mode-btn").onclick = () => el("app").classList.toggle("zen-active");
+  // Zen mode button removed per request
   
-  // ✅ SELECT & DELETE BUTTONS
+  // ✅ SELECT & DELETE BUTTONS UPDATE
   el("select-mode-btn").onclick = toggleSelectMode;
-  el("delete-chat-btn").onclick = handleDeleteAction;
   el("cancel-select-btn").onclick = toggleSelectMode;
   el("select-all-btn").onclick = selectAllMessages;
+  
+  // New combined delete button inside the toolbar
+  el("confirm-delete-btn").onclick = handleDeleteAction;
 
   // Generators
   el("gen-notes-btn").onclick = () => runGenerator('notes');
@@ -154,12 +156,11 @@ function updateSelectionUI() {
 }
 
 async function handleDeleteAction() {
-    if(STATE.selectMode && STATE.selectedIds.size > 0) {
+    if(STATE.selectedIds.size > 0) {
         if(!confirm(`Delete ${STATE.selectedIds.size} messages?`)) return;
         await deleteSelectedMessages();
     } else {
-        if(!confirm("Are you sure you want to delete EVERYTHING?")) return;
-        await clearChatHistory();
+        alert("Please select messages to delete first.");
     }
 }
 
@@ -186,29 +187,6 @@ async function deleteSelectedMessages() {
         }
     }
     toggleSelectMode();
-}
-
-async function clearChatHistory() {
-    el("chat-box").innerHTML = "";
-    if(auth.currentUser) {
-        try {
-            const q = query(collection(db, "users", auth.currentUser.uid, "chats"));
-            const snapshot = await getDocs(q);
-            const batch = writeBatch(db);
-            let count = 0;
-            snapshot.forEach(doc => {
-                batch.delete(doc.ref);
-                count++;
-            });
-            await batch.commit();
-            alert(`✅ Deleted ${count} messages from Cloud.`);
-        } catch(e) {
-            console.error(e);
-            alert("Error deleting: " + e.message);
-        }
-    } else {
-        alert("✅ Local chat cleared.");
-    }
 }
 
 /* ---------------- FILE PROCESSING (OCR) ---------------- */

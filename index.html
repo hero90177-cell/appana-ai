@@ -70,19 +70,40 @@
 
       <label>Target Exam / Class
         <select id="subject-selector">
-          <option value="General" disabled selected>Select Your Goal...</option>
-          <optgroup label="School">
+          <option value="General" selected>Select Your Goal...</option>
+          
+          <optgroup label="School (Classes 8-10)">
+            <option>Class 8</option>
             <option>Class 9</option>
             <option>Class 10</option>
+          </optgroup>
+
+          <optgroup label="Higher Secondary (11-12)">
             <option>Class 11 Science</option>
+            <option>Class 11 Commerce</option>
+            <option>Class 11 Arts/Humanities</option>
             <option>Class 12 Science</option>
             <option>Class 12 Commerce</option>
+            <option>Class 12 Arts/Humanities</option>
           </optgroup>
-          <optgroup label="Competitive">
+
+          <optgroup label="College & Professional">
+            <option>College / University Student</option>
+            <option>CA (Chartered Accountant)</option>
+            <option>CMA</option>
+            <option>CS (Company Secretary)</option>
+          </optgroup>
+
+          <optgroup label="Competitive Exams">
+            <option>CUET</option>
             <option>JEE Mains</option>
+            <option>JEE Advanced</option>
             <option>NEET</option>
-            <option>UPSC</option>
+            <option>UPSC / CSE</option>
+            <option>SSC / Banking</option>
           </optgroup>
+          
+          <option>Other Courses</option>
         </select>
       </label>
 
@@ -114,19 +135,20 @@
       </div>
 
       <div class="header-actions">
-        <span id="net-status" class="status-dot white" title="Internet Connection">● Net</span>
-        <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
+        <div class="status-stack">
+          <span id="net-status" class="status-dot white" title="Internet Connection">● Net</span>
+          <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
+        </div>
         
-        <button id="select-mode-btn" class="icon-btn" title="Select Messages" style="font-size:16px; color:#1e90ff;">☑️</button>
-        <button id="delete-chat-btn" class="icon-btn" title="Delete" style="color:#ff4757;">🗑️</button>
-        <button id="zen-mode-btn" class="icon-btn" title="Zen Mode">⛶</button>
+        <button id="select-mode-btn" class="icon-btn" title="Manage Messages" style="font-size:18px; color:#1e90ff; border:1px solid rgba(30,144,255,0.3); border-radius:50%;">✓</button>
       </div>
     </header>
 
     <div id="selection-toolbar" class="hidden" style="background:#1e90ff; padding:10px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.2);">
         <span id="selection-count">0 selected</span>
         <div style="display:flex; gap:10px;">
-            <button id="select-all-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">Select All</button>
+            <button id="confirm-delete-btn" style="background:#ff4757; color:white; border:none; padding:5px 12px; font-size:12px; font-weight:bold;">🗑️ Delete</button>
+            <button id="select-all-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">All</button>
             <button id="cancel-select-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">Cancel</button>
         </div>
     </div>
@@ -220,15 +242,12 @@
 <script type="module" src="script.js"></script>
 <script>
     window.switchMobileSection = function(section) {
-        // Hide all
         document.getElementById('section-menu').classList.add('mobile-hidden');
         document.getElementById('section-chat').classList.add('mobile-hidden');
         document.getElementById('section-tools').classList.add('mobile-hidden');
         
-        // Show selected
         document.getElementById('section-' + section).classList.remove('mobile-hidden');
         
-        // Update Buttons
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         event.currentTarget.classList.add('active');
     }
