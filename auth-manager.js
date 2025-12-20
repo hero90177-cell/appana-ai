@@ -20,7 +20,8 @@ export function setupAuthListener() {
             el("logout-btn").classList.add("hidden");
             // Only show default if chat is empty
             if(el("chat-box").children.length === 0) {
-                 el("chat-box").innerHTML = `<div class="message ai-message"><strong>🦅 Appana AI:</strong><p>Hello! Login to save your study history.</p></div>`;
+                 // ✅ Added ID 'welcome-msg-dynamic' to match new compact CSS
+                 el("chat-box").innerHTML = `<div id="welcome-msg-dynamic" class="message ai-message"><strong>🦅 Appana AI:</strong><p>Hello! Login to save your study history.</p></div>`;
             }
         }
     });
@@ -34,7 +35,8 @@ async function loadHistory(user) {
         const snap = await getDocs(q);
         
         if (snap.empty) {
-            el("chat-box").innerHTML = `<div class="message ai-message"><strong>🦅 Appana AI:</strong><p>Welcome! No history found. Start a new topic.</p></div>`;
+            // ✅ Added ID 'welcome-msg-dynamic' here too
+            el("chat-box").innerHTML = `<div id="welcome-msg-dynamic" class="message ai-message"><strong>🦅 Appana AI:</strong><p>Welcome! No history found. Start a new topic.</p></div>`;
         } else {
             snap.forEach(doc => {
                 const d = doc.data();
