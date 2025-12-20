@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#0b0b12">
+  <meta name="theme-color" content="#05050a">
   <title>Appana AI — Study Mentor</title>
   
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -115,6 +116,10 @@
       </div>
       
       <div class="header-actions">
+        <div id="magic-timer" class="timer-display hidden">
+            <span id="timer-icon">⏱</span> <span id="timer-val">00:00</span>
+        </div>
+
         <div class="status-group">
             <div class="status-item"><span id="net-status" class="status-dot"></span> NET</div>
             <div class="status-item"><span id="api-status" class="status-dot"></span> AI</div>
@@ -199,7 +204,7 @@
     <div id="custom-sub-status" style="font-size:12px; color:#d946ef; margin:5px 0;"></div>
     <textarea id="custom-sub-text" placeholder="Content..." style="height:100px; margin-top:5px;"></textarea>
     <div style="display:flex; gap:10px; margin-top:15px;">
-        <button id="save-subject-btn" class="primary">Save</button>
+        <button id="save-subject-btn" class="primary">Save & Remember</button>
         <button id="close-modal-btn" style="background:#ef4444;">Cancel</button>
     </div>
   </div>

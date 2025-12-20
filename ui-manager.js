@@ -8,6 +8,51 @@ let STATE = {
 
 const el = id => document.getElementById(id);
 
+// --- MAGIC TIMER LOGIC ---
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+
+const timer = {
+    start: () => {
+        if(timerRunning) return;
+        timerRunning = true;
+        el("magic-timer").classList.remove("hidden");
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            timer.updateDisplay();
+        }, 1000);
+    },
+    pause: () => {
+        timerRunning = false;
+        clearInterval(timerInterval);
+    },
+    stop: () => {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        el("magic-timer").classList.add("hidden");
+        timerSeconds = 0;
+        timer.updateDisplay();
+    },
+    reset: () => {
+        timerSeconds = 0;
+        timer.updateDisplay();
+    },
+    updateDisplay: () => {
+        const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const s = (timerSeconds % 60).toString().padStart(2, '0');
+        el("timer-val").innerText = `${m}:${s}`;
+    }
+};
+
+export function handleTimerCommand(cmd) {
+    const c = cmd.toLowerCase();
+    if (c.includes("start")) timer.start();
+    else if (c.includes("pause")) timer.pause();
+    else if (c.includes("stop") || c.includes("end")) timer.stop();
+    else if (c.includes("reset") || c.includes("restart")) { timer.reset(); timer.start(); }
+}
+
 export function setupUI() {
     // --- MOBILE NAVIGATION LOGIC ---
     const navBtns = document.querySelectorAll('.nav-btn');
@@ -15,19 +60,14 @@ export function setupUI() {
 
     navBtns.forEach(btn => {
         btn.onclick = () => {
-            // 1. Highlight Button
             navBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            // 2. Show Panel (Hide others completely using display:none via CSS class)
             const targetId = btn.getAttribute('data-target');
             sections.forEach(secId => {
                 const section = document.getElementById(secId);
-                if (secId === targetId) {
-                    section.classList.add('active-panel');
-                } else {
-                    section.classList.remove('active-panel');
-                }
+                if (secId === targetId) section.classList.add('active-panel');
+                else section.classList.remove('active-panel');
             });
         };
     });
@@ -67,6 +107,7 @@ export function toggleSelectMode() {
 
 // --- DATA HANDLING ---
 export function loadLocalData() {
+    // Reads from Phone/Local Storage
     const s = JSON.parse(localStorage.getItem("appana_v3"));
     if(s) { 
         STATE = {...STATE, ...s}; 
@@ -77,18 +118,32 @@ export function loadLocalData() {
 }
 
 export function saveData() {
+    // Writes to Phone/Local Storage
     localStorage.setItem("appana_v3", JSON.stringify(STATE));
 }
 
-// --- CUSTOM SUBJECTS ---
+// --- CUSTOM SUBJECTS (PERSISTENT & MULTIPLE) ---
 function saveCustomSubject() {
     const name = el("custom-sub-name").value;
     const content = el("custom-sub-text").value;
-    if(!name) return;
-    STATE.customSubjects.push({ id: Date.now(), name, content });
-    saveData();
+    
+    if(!name) return alert("Please enter a subject name.");
+    
+    // Add to array (Multiple Support)
+    STATE.customSubjects.push({ 
+        id: Date.now(), 
+        name, 
+        content: content || "No description." 
+    });
+    
+    saveData(); // Save to persistent storage immediately
     renderCustomSubjects();
+    
+    el("custom-sub-name").value = "";
+    el("custom-sub-text").value = "";
     el("custom-subject-modal").classList.add("hidden");
+    
+    alert(`Subject "${name}" saved to storage!`);
 }
 
 function renderCustomSubjects() {
@@ -96,7 +151,8 @@ function renderCustomSubjects() {
     group.innerHTML = "";
     STATE.customSubjects.forEach(s => {
         const o = document.createElement("option");
-        o.value = "custom_" + s.id; o.innerText = "★ " + s.name;
+        o.value = "custom_" + s.id; 
+        o.innerText = "★ " + s.name;
         group.appendChild(o);
     });
 }

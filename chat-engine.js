@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { STATE, toggleSelectMode, saveData } from './ui-manager.js';
+import { STATE, toggleSelectMode, saveData, handleTimerCommand } from './ui-manager.js';
 import { deleteMessagesFromCloud } from './auth-manager.js';
 
 const el = id => document.getElementById(id);
@@ -60,6 +60,12 @@ export function setupChat() {
 async function handleSend() {
     const txt = el("user-input").value.trim();
     if(!txt) return;
+
+    // 🕵️ MAGIC TIMER COMMAND DETECTION
+    const lowerTxt = txt.toLowerCase();
+    if(lowerTxt.includes("timer") || lowerTxt.includes("stopwatch") || lowerTxt.includes("count")) {
+        handleTimerCommand(lowerTxt);
+    }
 
     const msgId = "msg_" + Date.now();
     appendMsg("You", txt, "user-message", msgId);
