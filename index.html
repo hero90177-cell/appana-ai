@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0b0b12">
-  <title>Appana AI — Ultra Study Mentor</title>
+  <title>Appana AI — Study Mentor</title>
   
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/809/809052.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -26,42 +26,29 @@
 <div id="app" class="app-container">
 
   <aside id="section-menu" class="sidebar mobile-hidden">
-    <header class="brand">
-      <div class="logo-wrap">
-        <img src="https://cdn-icons-png.flaticon.com/512/809/809052.png" alt="Eagle">
-      </div>
-      <div class="brand-text">
-        <h1>Appana AI</h1>
-        <small>Ultra Indian Techno</small>
-      </div>
+    <header class="brand" style="display:flex; align-items:center; gap:10px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div class="logo-wrap" style="font-size:24px;">🦅</div>
+      <div class="brand-text"><h1 style="margin:0; font-size:18px;">Appana AI</h1><small style="color:#64748b;">Ultra Indian Techno</small></div>
     </header>
 
-    <div class="wisdom-widget">
-      <small>💡 Daily Motivation</small>
-      <p id="daily-quote">"Loading wisdom..."</p>
+    <div id="sidebar-motivation-container" class="motivation-card">
+        <h4>🔥 Motivation Boost</h4>
+        <div id="sidebar-motivation-text" class="motivation-text">Loading inspiration...</div>
     </div>
 
-    <div class="stats-panel">
-      <div class="stat-row"><span>🏆 Rank: <strong id="user-rank" style="color:#ffd700">Novice</strong></span></div>
-      <div class="stat-row"><span>⚡ XP: <strong id="user-xp">0</strong></span></div>
-      <div class="stat-row"><span>🔥 Streak: <strong id="streak">0 Days</strong></span></div>
-      <button id="view-analytics-btn" class="full-btn" style="margin-top:5px; font-size:11px; background:rgba(255,255,255,0.1);">📊 View Study Stats</button>
+    <div class="stats-panel" style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+      <div>🏆 Rank: <strong id="user-rank" style="color:#ffd700">Novice</strong></div>
+      <div>⚡ XP: <strong id="user-xp">0</strong></div>
+      <div>🔥 Streak: <strong id="streak">0 Days</strong></div>
     </div>
 
     <section class="controls">
-      <button id="install-btn" class="install-btn hidden">📲 Install App</button>
-      <label>Answer Mode
-        <select id="exam-mode-selector">
-          <option value="normal">Standard Chat</option>
-          <option value="2marks">2 Marks (Very Short)</option>
-          <option value="5marks">5 Marks (Paragraph)</option>
-          <option value="8marks">8 Marks (Detailed Essay)</option>
-          <option value="teacher">👨‍🏫 Strict Teacher</option>
-        </select>
-      </label>
-      <label>Target Exam / Class
-        <select id="subject-selector">
+      <button id="add-subject-btn" class="primary" style="margin-bottom:10px;">➕ Add Custom Subject</button>
+      
+      <label style="display:block; margin-top:10px; font-size:12px; color:#94a3b8;">Target Exam / Class
+        <select id="subject-selector" style="margin-top:5px;">
           <option value="General" selected>Select Your Goal...</option>
+          <optgroup label="My Custom Subjects" id="custom-subjects-group"></optgroup>
           <optgroup label="School (Classes 8-10)">
             <option>Class 8</option><option>Class 9</option><option>Class 10</option>
           </optgroup>
@@ -78,60 +65,78 @@
           <option>Other Courses</option>
         </select>
       </label>
-      <label>Language
-        <select id="language-selector"><option>English</option><option>Hinglish</option><option>Hindi</option></select>
+
+      <label style="display:block; margin-top:10px; font-size:12px; color:#94a3b8;">Language
+        <select id="language-selector" style="margin-top:5px;"><option>English</option><option>Hinglish</option><option>Hindi</option></select>
       </label>
-      <div class="small-btns"><button id="login-btn">🔐 Login</button><button id="logout-btn" class="hidden">🚪 Logout</button></div>
+
+      <label style="display:block; margin-top:10px; font-size:12px; color:#94a3b8;">Answer Mode
+        <select id="exam-mode-selector" style="margin-top:5px;">
+          <option value="normal">Standard Chat</option>
+          <option value="2marks">2 Marks (Very Short)</option>
+          <option value="5marks">5 Marks (Paragraph)</option>
+          <option value="8marks">8 Marks (Detailed Essay)</option>
+          <option value="teacher">👨‍🏫 Strict Teacher</option>
+        </select>
+      </label>
+      
+      <div class="small-btns" style="margin-top:15px; display:flex; gap:5px;"><button id="login-btn">🔐 Login</button><button id="logout-btn" class="hidden">🚪 Logout</button></div>
     </section>
   </aside>
 
   <main id="section-chat" class="main-area">
     <header class="chat-header">
-      <div><h2>Study Chat</h2><small id="chat-subtitle">AI Mentor (Encrypted 🔒)</small></div>
-      <div id="mini-timer" class="hidden" style="background:#0f1220; padding:4px 10px; border-radius:12px; border:1px solid #1e90ff; display:flex; align-items:center; gap:8px;">
-        <span style="font-family:monospace; font-weight:bold; color:#1e90ff; font-size:16px;" id="timer-display">00:00</span>
-        <button id="stop-timer-btn" style="padding:2px 8px; font-size:10px; background:#ff4757; color:white; border:none; border-radius:4px;">STOP</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:18px;">🦅</span>
+        <div><h2 style="font-size:15px;">Study Chat</h2><small style="font-size:10px; opacity:0.6;">Encrypted 🔒</small></div>
       </div>
+      
       <div class="header-actions">
-        <div class="status-stack">
-          <span id="net-status" class="status-dot white" title="Internet Connection">● Net</span>
-          <span id="api-status" class="status-dot white" title="AI Brain Status">● AI</span>
+        <div id="mini-timer" class="hidden" style="display:flex; align-items:center; gap:5px; background:rgba(255,0,0,0.1); padding:2px 6px; border-radius:4px; border:1px solid red;">
+          <span id="timer-display" style="color:#ff4757; font-family:monospace; font-weight:bold;">00:00</span>
+          <button id="stop-timer-btn" style="padding:1px 4px; font-size:9px; height:auto; background:none; border:none; color:white;">X</button>
         </div>
-        <button id="select-mode-btn" class="icon-btn" title="Manage Messages" style="font-size:18px; color:#1e90ff; border:1px solid rgba(30,144,255,0.3); border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center;">✓</button>
+        
+        <div class="status-stack" title="Top: Net, Bottom: AI">
+          <span id="net-status" class="status-dot" title="Internet"></span>
+          <span id="api-status" class="status-dot" title="AI Brain"></span>
+        </div>
+
+        <button id="select-mode-btn" class="icon-btn" style="background:none; border:1px solid #3b82f6; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; color:#3b82f6;">✓</button>
       </div>
     </header>
 
-    <div id="selection-toolbar" class="hidden" style="background:#1e90ff; padding:10px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.2);">
-        <span id="selection-count">0 selected</span>
-        <div style="display:flex; gap:10px;">
-            <button id="confirm-delete-btn" style="background:#ff4757; color:white; border:none; padding:5px 12px; font-size:12px; font-weight:bold;">🗑️ Delete</button>
-            <button id="select-all-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">All</button>
-            <button id="cancel-select-btn" style="background:rgba(0,0,0,0.2); border:1px solid white; padding:5px 12px; font-size:12px;">Cancel</button>
+    <div id="sticky-motivation">"Loading daily motivation..."</div>
+
+    <div id="selection-toolbar" class="hidden" style="position:absolute; top:54px; left:0; width:100%; background:#3b82f6; padding:8px; display:flex; justify-content:space-between; align-items:center; z-index:50;">
+        <span id="selection-count" style="color:white; font-weight:bold;">0 selected</span>
+        <div style="display:flex; gap:5px;">
+            <button id="confirm-delete-btn" style="background:#ef4444; color:white; width:auto; padding:4px 12px; border:none;">🗑 Delete</button>
+            <button id="cancel-select-btn" style="background:rgba(0,0,0,0.2); color:white; width:auto; padding:4px 12px; border:none;">Cancel</button>
         </div>
     </div>
 
     <div id="chat-box" class="chat-box">
-      <div id="welcome-msg" class="message ai-message">
+      <div class="message ai-message">
         <strong>🦅 Appana AI:</strong>
-        <p>Welcome! Upload an image/PDF, and I will <b>convert it to text</b> for you.</p>
+        <p>Hello! I am ready. Add a custom subject or start chatting.</p>
       </div>
     </div>
 
-    <div id="weakness-alert" class="hidden" style="background: rgba(255,71,87,0.1); border-top:1px solid #ff4757; color:#ff4757; padding:5px 15px; font-size:12px;">
+    <div id="weakness-alert" class="hidden" style="background: rgba(239,68,68,0.1); border-top:1px solid #ef4444; color:#ef4444; padding:5px 15px; font-size:12px;">
       ⚠️ Weak Topic: <span id="weak-topic-name"></span>. <button id="fix-weakness-btn" style="background:none; border:none; text-decoration:underline; color:white; cursor:pointer;">Quiz?</button>
     </div>
 
     <div class="composer-area">
-      <div id="file-preview" class="hidden">
-        <span id="file-name"></span> <button id="remove-file">×</button>
-        <span id="ocr-status" style="font-size:11px; color:#ffd700; margin-left:10px; font-weight:bold;"></span>
+      <div id="file-preview" class="hidden" style="margin-bottom:5px; font-size:11px; color:#ffd700;">
+        <span id="file-name"></span> <span id="ocr-status">Processing...</span> <button id="remove-file" style="width:auto; padding:2px 5px;">x</button>
       </div>
       
       <form class="composer" onsubmit="return false;">
-        <label for="file-upload" class="icon-btn">📎</label>
+        <label for="file-upload" class="icon-btn" style="cursor:pointer; font-size:18px; color:#94a3b8;">📎</label>
         <input type="file" id="file-upload" accept="image/*, .pdf, .txt" hidden>
         
-        <button id="voice-btn" class="icon-btn">🎤</button>
+        <button id="voice-btn" class="icon-btn" style="background:none; border:none; font-size:18px;">🎤</button>
         
         <textarea id="user-input" placeholder="Type here..." rows="1"></textarea>
         
@@ -141,52 +146,55 @@
   </main>
 
   <aside id="section-tools" class="right-panel mobile-hidden">
-    <section class="tool-card">
+    <div class="tool-card">
       <h3>⚡ Generators</h3>
-      <input id="topic-input" placeholder="Topic (e.g. Gravity)">
-      <div class="grid-btns">
-        <button id="gen-notes-btn">Notes</button><button id="gen-mcq-btn">Quiz</button><button id="gen-imp-btn">Imp Qs</button>
-        <button id="gen-passage-btn" style="grid-column: span 3; margin-top:5px; background: rgba(255,255,255,0.1);">📝 Passage</button>
+      <input id="topic-input" placeholder="Enter Topic (e.g. Gravity)" style="margin-bottom:8px;">
+      <div class="grid-btns" style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+        <button id="gen-notes-btn">Notes</button>
+        <button id="gen-mcq-btn">Quiz</button>
+        <button id="gen-imp-btn">Imp Qs</button>
+        <button id="gen-passage-btn" style="background: rgba(255,255,255,0.05);">📝 Passage</button>
       </div>
-    </section>
+    </div>
 
-    <section class="tool-card">
+    <div class="tool-card">
       <h3>⚙ Tools</h3>
       <button id="pdf-btn" class="full-btn">Download PDF</button>
-      <div class="toggles"><label><input type="checkbox" id="tts-toggle" checked> Voice Reply</label></div>
+      <div class="toggles" style="margin-top:10px;"><label style="font-size:12px; display:flex; align-items:center; gap:5px;"><input type="checkbox" id="tts-toggle" checked> Voice Reply</label></div>
+      
       <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
         <h4 style="margin:0 0 5px 0; font-size:13px; color:#9aa4b2;">Chapter Tracker</h4>
         <div style="display:flex; gap:5px;"><input id="chapter-name" placeholder="Name" style="font-size:12px;"><button id="mark-chapter-btn" style="width:auto; padding:0 10px;">✔</button></div>
         <div id="chapter-list" style="max-height:100px; overflow-y:auto; margin-top:5px; font-size:11px; color:#aaa;"></div>
       </div>
-      <button id="clear-db-btn" class="danger-btn" style="opacity:0.6; font-size:11px;">⚠ Factory Reset</button>
-    </section>
+      <button id="clear-db-btn" class="danger-btn" style="margin-top:15px; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.5);">⚠ Factory Reset</button>
+    </div>
   </aside>
 
   <nav id="mobile-nav" class="mobile-nav">
-    <button class="nav-btn" onclick="switchMobileSection('menu')"><span>☰</span> <small>Menu</small></button>
-    <button class="nav-btn active" onclick="switchMobileSection('chat')"><span>💬</span> <small>Chat</small></button>
-    <button class="nav-btn" onclick="switchMobileSection('tools')"><span>⚡</span> <small>Tools</small></button>
+    <button class="nav-btn" data-target="menu"><span>☰</span><small>Menu</small></button>
+    <button class="nav-btn active" data-target="chat"><span>💬</span><small>Chat</small></button>
+    <button class="nav-btn" data-target="tools"><span>⚡</span><small>Tools</small></button>
   </nav>
 
 </div>
-<div id="analytics-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999; display:flex; justify-content:center; align-items:center;">
-    <div style="background:#0f1220; padding:20px; border-radius:15px; border:1px solid #1e90ff; width:90%; max-width:500px;">
-        <h2 style="color:#1e90ff; margin-top:0;">📊 Study Analytics</h2>
-        <div id="analytics-content" style="color:#e8eefb; font-size:14px; line-height:1.6;"></div>
-        <button onclick="document.getElementById('analytics-modal').classList.add('hidden')" class="full-btn" style="margin-top:15px;">Close</button>
+
+<div id="custom-subject-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3 style="color:var(--accent); margin-top:0;">Add Custom Subject</h3>
+    <input id="custom-sub-name" placeholder="Subject Name (e.g. Physics Notes)">
+    <label style="display:block; margin:10px 0; font-size:12px; color:#aaa;">Upload Content (Image/PDF):</label>
+    <input type="file" id="custom-sub-file">
+    <div id="custom-sub-status" style="font-size:11px; color:#ffd700; min-height:15px; margin:5px 0;"></div>
+    <textarea id="custom-sub-text" placeholder="Extracted text will appear here. You can edit it." style="height:100px; font-size:11px; background:#000; border:1px solid #333; color:#ccc;"></textarea>
+    
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button id="save-subject-btn" class="primary">Save Forever</button>
+        <button id="close-modal-btn" style="background:#ef4444; color:white;">Cancel</button>
     </div>
+  </div>
 </div>
+
 <script type="module" src="script.js"></script>
-<script>
-    window.switchMobileSection = function(section) {
-        document.getElementById('section-menu').classList.add('mobile-hidden');
-        document.getElementById('section-chat').classList.add('mobile-hidden');
-        document.getElementById('section-tools').classList.add('mobile-hidden');
-        document.getElementById('section-' + section).classList.remove('mobile-hidden');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-    }
-</script>
 </body>
 </html>
