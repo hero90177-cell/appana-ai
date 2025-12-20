@@ -4,15 +4,16 @@
   --panel: #0a0a12;         /* Slightly lighter panel */
   --panel-border: 1px solid rgba(255, 255, 255, 0.06);
   
-  --accent: #06b6d4;        /* Cyan Glow (Futuristic) */
+  --accent: #06b6d4;        /* Cyan Glow */
   --accent-glow: rgba(6, 182, 212, 0.4);
   
   --secondary: #d946ef;     /* Violet Neon */
   --secondary-glow: rgba(217, 70, 239, 0.4);
   
   --success: #10b981;
+  --danger: #ef4444;        /* RED for Timer */
   --text-main: #f8fafc;
-  --text-muted: #64748b;    /* Slate */
+  --text-muted: #64748b;    
   
   --glass: rgba(255, 255, 255, 0.03);
   --radius: 16px;
@@ -33,7 +34,7 @@ body {
   height: 100vh;
   height: 100dvh; 
   overflow: hidden;
-  font-size: 14px; /* Default slightly smaller */
+  font-size: 14px; 
 }
 
 .hidden { display: none !important; }
@@ -50,7 +51,7 @@ body {
 
 /* PANELS - Glassy & Deep */
 .sidebar, .right-panel, .main-area {
-  background: rgba(10, 10, 18, 0.7); /* Translucent */
+  background: rgba(10, 10, 18, 0.7); 
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: var(--panel-border);
@@ -80,21 +81,25 @@ body {
 /* STATUS & TIMER */
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
-/* MAGIC TIMER STYLES */
+/* 🔴 MAGIC TIMER STYLES (UPDATED RED) */
 .timer-display {
     display: flex; align-items: center; gap: 6px;
-    background: rgba(6, 182, 212, 0.1);
-    border: 1px solid rgba(6, 182, 212, 0.3);
+    background: rgba(239, 68, 68, 0.1); /* Red Tint */
+    border: 1px solid rgba(239, 68, 68, 0.4); /* Red Border */
     padding: 4px 10px;
     border-radius: 8px;
-    color: var(--accent);
+    color: var(--danger); /* Red Text */
     font-family: 'JetBrains Mono', monospace;
     font-weight: bold;
     font-size: 13px;
-    box-shadow: 0 0 10px rgba(6, 182, 212, 0.1);
-    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+    animation: pulseRed 2s infinite;
 }
-@keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 8px var(--accent); } 100% { opacity: 0.8; } }
+@keyframes pulseRed { 
+    0% { opacity: 0.8; } 
+    50% { opacity: 1; text-shadow: 0 0 8px var(--danger); } 
+    100% { opacity: 0.8; } 
+}
 
 .status-group {
     display: flex; align-items: center; gap: 12px;
@@ -133,28 +138,38 @@ body {
   padding: 50px 12px 12px 12px; 
   display: flex; 
   flex-direction: column; 
-  gap: 8px; /* Tighter gap */
+  gap: 8px; 
   scroll-behavior: smooth;
   background-image: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.02) 0%, transparent 60%);
 }
 
-.chat-box.select-mode-active .message { cursor: pointer; border: 1px dashed rgba(255,255,255,0.3); }
-.chat-box.select-mode-active .message.selected { border: 2px solid var(--accent); background: rgba(6, 182, 212, 0.2) !important; }
+/* 🎯 SELECT MODE STYLES */
+.chat-box.select-mode-active .message { 
+    cursor: pointer; 
+    border: 1px dashed rgba(255,255,255,0.3); 
+    transition: 0.2s;
+}
+.chat-box.select-mode-active .message:hover {
+    background: rgba(255,255,255,0.05);
+}
+.chat-box.select-mode-active .message.selected { 
+    border: 2px solid var(--accent); 
+    background: rgba(6, 182, 212, 0.2) !important; 
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+}
 
-/* MESSAGES - REDUCED SIZE & COMPACT */
+/* MESSAGES - COMPACT */
 .message { 
-  max-width: 80%; /* Smaller max width */
+  max-width: 80%; 
   width: fit-content;
-  padding: 6px 12px; /* Very Compact padding */
+  padding: 6px 12px; 
   border-radius: 12px; 
   line-height: 1.4; 
-  font-size: 13.5px; /* Smaller font */
+  font-size: 13.5px; 
   position: relative; 
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   word-wrap: break-word;
 }
-
-/* Specific Fix for Welcome Message */
 #welcome-msg, #welcome-msg-dynamic { padding: 6px 12px; font-size: 13px; }
 
 .ai-message { 
@@ -193,7 +208,7 @@ body {
   outline: none; 
   resize: none; 
   transition: all 0.3s;
-  height: 38px; /* Compact */
+  height: 38px;
   min-height: 38px;
 }
 .composer textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); height: 80px; }

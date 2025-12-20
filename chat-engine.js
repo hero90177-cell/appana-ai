@@ -1,6 +1,7 @@
+// chat-engine.js
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { STATE, toggleSelectMode, saveData, handleTimerCommand } from './ui-manager.js';
+import { STATE, toggleSelectMode, saveData, timer } from './ui-manager.js';
 import { deleteMessagesFromCloud } from './auth-manager.js';
 
 const el = id => document.getElementById(id);
@@ -36,7 +37,7 @@ export function setupChat() {
         };
     });
 
-    // Delete Button Logic
+    // Delete Button Logic (Fixed)
     el("confirm-delete-btn").onclick = async () => {
         if(STATE.selectedIds.size === 0) return;
         const ids = Array.from(STATE.selectedIds);
@@ -61,12 +62,40 @@ async function handleSend() {
     const txt = el("user-input").value.trim();
     if(!txt) return;
 
-    // 🕵️ MAGIC TIMER COMMAND DETECTION
+    // 🕵️ SMART MAGIC TIMER COMMAND DETECTION
     const lowerTxt = txt.toLowerCase();
-    if(lowerTxt.includes("timer") || lowerTxt.includes("stopwatch") || lowerTxt.includes("count")) {
-        handleTimerCommand(lowerTxt);
+    
+    // 1. Check for Stop/Pause/Reset
+    if (lowerTxt === "stop" || lowerTxt === "stop timer" || lowerTxt === "end timer") {
+        timer.stop();
+        el("user-input").value = "";
+        return; // Don't send to AI
+    }
+    
+    // 2. Check for Timer (Countdown) e.g., "Timer 10 mins"
+    const timerMatch = lowerTxt.match(/timer\s+(\d+)\s*(min|sec|hour|h|m|s)?/);
+    if (timerMatch) {
+        let val = parseInt(timerMatch[1]);
+        const unit = timerMatch[2] || 'min';
+        
+        if (unit.startsWith('h')) val *= 3600;
+        else if (unit.startsWith('m')) val *= 60;
+        
+        timer.startTimer(val);
+        appendMsg("System", `⏳ Timer set for ${val/60} minutes.`, "ai-message");
+        el("user-input").value = "";
+        return;
     }
 
+    // 3. Check for Stopwatch (Count Up)
+    if (lowerTxt.includes("stopwatch") || lowerTxt.includes("start timer")) {
+        timer.startStopwatch();
+        appendMsg("System", "⏱ Stopwatch started.", "ai-message");
+        el("user-input").value = "";
+        return;
+    }
+
+    // --- NORMAL CHAT FLOW ---
     const msgId = "msg_" + Date.now();
     appendMsg("You", txt, "user-message", msgId);
     el("user-input").value = "";
@@ -123,6 +152,7 @@ export function appendMsg(who, txt, cls, id) {
     // CLICK TO SELECT
     div.onclick = () => {
         if(!STATE.selectMode) return;
+        
         if(STATE.selectedIds.has(id)) {
             STATE.selectedIds.delete(id);
             div.classList.remove("selected");

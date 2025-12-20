@@ -1,4 +1,7 @@
-let STATE = { 
+// ui-manager.js
+
+// ✅ FIX: Use 'const' and modify properties so imports don't break
+export const STATE = { 
   xp: 0, 
   customSubjects: [], 
   chapters: [],
@@ -8,50 +11,74 @@ let STATE = {
 
 const el = id => document.getElementById(id);
 
-// --- MAGIC TIMER LOGIC ---
+// --- 🔴 MAGIC TIMER & STOPWATCH (RED) ---
 let timerInterval = null;
 let timerSeconds = 0;
-let timerRunning = false;
+let timerMode = 'stopwatch'; // 'stopwatch' (up) or 'timer' (down)
 
-const timer = {
-    start: () => {
-        if(timerRunning) return;
-        timerRunning = true;
+export const timer = {
+    // START STOPWATCH (Count UP)
+    startStopwatch: () => {
+        timer.stop();
+        timerMode = 'stopwatch';
+        timerSeconds = 0;
+        timer.run();
+    },
+
+    // START TIMER (Count DOWN)
+    startTimer: (durationSeconds) => {
+        timer.stop();
+        timerMode = 'timer';
+        timerSeconds = durationSeconds;
+        timer.run();
+    },
+
+    run: () => {
         el("magic-timer").classList.remove("hidden");
+        el("timer-icon").innerText = timerMode === 'timer' ? '⏳' : '⏱'; // Icon change
+        
         timerInterval = setInterval(() => {
-            timerSeconds++;
+            if (timerMode === 'stopwatch') {
+                timerSeconds++;
+            } else {
+                timerSeconds--;
+                if (timerSeconds <= 0) {
+                    timer.stop();
+                    alert("⏰ Time is up!");
+                    return;
+                }
+            }
             timer.updateDisplay();
         }, 1000);
+        timer.updateDisplay();
     },
+
     pause: () => {
-        timerRunning = false;
         clearInterval(timerInterval);
     },
+
     stop: () => {
-        timerRunning = false;
         clearInterval(timerInterval);
         el("magic-timer").classList.add("hidden");
         timerSeconds = 0;
         timer.updateDisplay();
     },
+
     reset: () => {
-        timerSeconds = 0;
+        // Resets based on last mode, defaulting to 0 for stopwatch
+        timerSeconds = 0; 
         timer.updateDisplay();
     },
+
     updateDisplay: () => {
-        const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const h = Math.floor(timerSeconds / 3600);
+        const m = Math.floor((timerSeconds % 3600) / 60).toString().padStart(2, '0');
         const s = (timerSeconds % 60).toString().padStart(2, '0');
-        el("timer-val").innerText = `${m}:${s}`;
+        
+        // Show HH:MM:SS if > 1 hour, else MM:SS
+        el("timer-val").innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
     }
 };
-
-export function handleTimerCommand(cmd) {
-    const c = cmd.toLowerCase();
-    if (c.includes("start")) timer.start();
-    else if (c.includes("pause")) timer.pause();
-    else if (c.includes("stop") || c.includes("end")) timer.stop();
-    else if (c.includes("reset") || c.includes("restart")) { timer.reset(); timer.start(); }
-}
 
 export function setupUI() {
     // --- MOBILE NAVIGATION LOGIC ---
@@ -103,6 +130,8 @@ export function toggleSelectMode() {
         toolbar.classList.add("hidden");
         document.querySelectorAll(".message.selected").forEach(m => m.classList.remove("selected"));
     }
+    
+    el("selection-count").innerText = "0 Selected";
 }
 
 // --- DATA HANDLING ---
@@ -110,7 +139,9 @@ export function loadLocalData() {
     // Reads from Phone/Local Storage
     const s = JSON.parse(localStorage.getItem("appana_v3"));
     if(s) { 
-        STATE = {...STATE, ...s}; 
+        // ✅ FIX: Object.assign updates the CONST reference instead of replacing it
+        Object.assign(STATE, s);
+        
         el("user-xp").innerText = STATE.xp;
         renderCustomSubjects();
         renderChapters();
@@ -173,5 +204,3 @@ function renderChapters() {
     });
 }
 window.delChap = (i) => { STATE.chapters.splice(i,1); saveData(); renderChapters(); };
-
-export { STATE };
