@@ -21,6 +21,21 @@ document.addEventListener("DOMContentLoaded", () => {
   updateGamificationUI();
   updateMotivation();
 
+  // ✅ Auto-Resize Textarea
+  const textarea = el("user-input");
+  textarea.addEventListener("input", function() {
+    this.style.height = "auto";
+    this.style.height = (this.scrollHeight) + "px";
+  });
+  
+  // Enter key sends, Shift+Enter adds new line
+  textarea.onkeypress = e => {
+      if(e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+      }
+  };
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e;
     const btn = el('install-btn');
@@ -28,12 +43,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   el("send-btn").onclick = () => handleSend();
-  el("user-input").onkeypress = e => e.key === "Enter" && handleSend();
-  
   el("login-btn").onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
   el("logout-btn").onclick = () => { signOut(auth); el("chat-box").innerHTML = ""; appendMsg("🦅 Appana AI", "Logged out.", "ai-message"); };
 
-  // ✅ TICK BUTTON LOGIC
+  // Select Mode Logic
   const selectBtn = el("select-mode-btn");
   if(selectBtn) selectBtn.onclick = toggleSelectMode;
 
@@ -60,7 +73,11 @@ document.addEventListener("DOMContentLoaded", () => {
       el("file-name").innerText = file.name;
       el("ocr-status").innerText = "Reading file... ⏳";
       const text = await processFileAndInsertText(file);
-      if(text) { el("user-input").value = text; el("ocr-status").innerText = "Done! ✅"; } 
+      if(text) { 
+          el("user-input").value = text; 
+          el("user-input").dispatchEvent(new Event('input')); // Trigger resize
+          el("ocr-status").innerText = "Done! ✅"; 
+      } 
       else { el("ocr-status").innerText = "Sent as file."; }
     }
   };
@@ -80,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 });
 
-/* ---------------- SELECT & DELETE LOGIC ---------------- */
+/* ---------------- UPDATED SELECT & DELETE LOGIC ---------------- */
 
 function toggleSelectMode() {
     STATE.selectMode = !STATE.selectMode;
@@ -94,49 +111,52 @@ function toggleSelectMode() {
         el("chat-box").classList.remove("select-mode-active");
     }
     
-    // Refresh checkboxes on all messages
     document.querySelectorAll(".message").forEach(msg => {
-        if(STATE.selectMode) addCheckboxToMsg(msg);
-        else removeCheckboxFromMsg(msg);
+        if(STATE.selectMode) setupMessageSelection(msg);
+        else cleanupMessageSelection(msg);
     });
     
     updateSelectionUI();
 }
 
-function addCheckboxToMsg(msgEl) {
+function setupMessageSelection(msgEl) {
     if(msgEl.querySelector(".msg-check")) return;
     
     const chk = document.createElement("input");
     chk.type = "checkbox";
     chk.className = "msg-check";
-    
-    chk.onchange = (e) => {
-        if(e.target.checked) STATE.selectedIds.add(msgEl.id);
-        else STATE.selectedIds.delete(msgEl.id);
-        updateSelectionUI();
-    };
+    msgEl.prepend(chk);
 
-    // ✅ TAP TO SELECT FEATURE
+    // Make the WHOLE message clickable
     msgEl.onclick = (e) => {
         if(!STATE.selectMode) return;
-        if(e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return; 
         chk.checked = !chk.checked;
-        chk.dispatchEvent(new Event('change')); 
+        if(chk.checked) {
+            STATE.selectedIds.add(msgEl.id);
+            msgEl.classList.add("selected");
+        } else {
+            STATE.selectedIds.delete(msgEl.id);
+            msgEl.classList.remove("selected");
+        }
+        updateSelectionUI();
     };
-
-    msgEl.prepend(chk);
 }
 
-function removeCheckboxFromMsg(msgEl) {
+function cleanupMessageSelection(msgEl) {
     const chk = msgEl.querySelector(".msg-check");
     if(chk) chk.remove();
+    msgEl.classList.remove("selected");
     msgEl.onclick = null; 
 }
 
 function selectAllMessages() {
-    document.querySelectorAll(".msg-check").forEach(chk => {
-        chk.checked = true;
-        STATE.selectedIds.add(chk.parentElement.id);
+    document.querySelectorAll(".message").forEach(msg => {
+        const chk = msg.querySelector(".msg-check");
+        if(chk) {
+            chk.checked = true;
+            STATE.selectedIds.add(msg.id);
+            msg.classList.add("selected");
+        }
     });
     updateSelectionUI();
 }
@@ -201,7 +221,10 @@ async function handleSend(manualText = null) {
 
   const msgId = "msg_" + Date.now();
   appendMsg("You", t, "user-message", msgId);
-  if (!manualText) inputEl.value = "";
+  if (!manualText) {
+      inputEl.value = "";
+      inputEl.style.height = "auto"; // Reset height
+  }
   el("file-upload").value = ""; el("file-preview").classList.add("hidden");
 
   if (t.toLowerCase().includes("start timer")) {
@@ -240,24 +263,12 @@ function triggerAI(msg, file, userMsgId) {
   } else req(null);
 }
 
-// ✅ FIXED: ADDED enc: true SO REFRESH WORKS
 function saveToCloud(u, a, uId, aId) {
   if (!auth.currentUser) return;
-  setDoc(doc(db, "users", auth.currentUser.uid, "chats", uId), { 
-    msg: encryptData(u), 
-    sender: "user", 
-    ts: serverTimestamp(),
-    enc: true // MARK AS ENCRYPTED
-  });
-  setDoc(doc(db, "users", auth.currentUser.uid, "chats", aId), { 
-    msg: encryptData(a), 
-    sender: "ai", 
-    ts: serverTimestamp(),
-    enc: true // MARK AS ENCRYPTED
-  });
+  setDoc(doc(db, "users", auth.currentUser.uid, "chats", uId), { msg: encryptData(u), sender: "user", ts: serverTimestamp(), enc: true });
+  setDoc(doc(db, "users", auth.currentUser.uid, "chats", aId), { msg: encryptData(a), sender: "ai", ts: serverTimestamp(), enc: true });
 }
 
-// ✅ FIXED: BETTER DECRYPTION LOGIC
 async function loadChatHistory(user) {
     if (!user || el("chat-box").childElementCount > 1) return; 
     const q = query(collection(db, "users", user.uid, "chats"), orderBy("ts", "asc"), limit(50));
@@ -265,7 +276,6 @@ async function loadChatHistory(user) {
     snapshot.forEach(d => {
         const data = d.data();
         let txt = data.u || data.msg;
-        // Check for flag OR if text looks like ciphertext (starts with U2F)
         if (data.enc || (txt && typeof txt === 'string' && txt.startsWith('U2FsdGVk'))) {
             txt = decryptData(txt);
         }
@@ -291,7 +301,7 @@ function hardReset() { localStorage.clear(); if('serviceWorker' in navigator) na
 function appendMsg(who, txt, cls, id) {
   const d = document.createElement("div"); d.className = `message ${cls}`; if(id) d.id = id;
   d.innerHTML = `<strong>${who}:</strong> ${marked.parse(txt)}`;
-  if(STATE.selectMode) addCheckboxToMsg(d);
+  if(STATE.selectMode) setupMessageSelection(d);
   el("chat-box").appendChild(d); el("chat-box").scrollTop = el("chat-box").scrollHeight;
 }
 
