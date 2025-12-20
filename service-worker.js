@@ -1,5 +1,5 @@
-// ✅ FIX: Bumped to v8 to FORCE update
-const CACHE = "appana-cf-v8";
+// ✅ BUMPED TO v9 TO FORCE UPDATE
+const CACHE = "appana-cf-v9";
 const ASSETS = [
   "/",
   "/index.html",
