@@ -1,9 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- =========================
-       BASIC META
-  ========================== -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0a0b14">
@@ -12,29 +9,20 @@
   <title>Appana AI — Study Mentor</title>
   <meta name="description" content="Appana AI is a smart study mentor for Class 11 Commerce students, offering AI-powered explanations, quizzes, notes, and exam-focused guidance.">
 
-  <!-- =========================
-       STYLES
-  ========================== -->
   <link rel="stylesheet" href="global.css">
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="chat.css">
+  <link rel="stylesheet" href="tools.css">
 
-  <!-- =========================
-       PWA
-  ========================== -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- =========================
-       FONTS
-  ========================== -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
-  <!-- =========================
-       LIBRARIES (UNCHANGED)
-  ========================== -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
@@ -49,27 +37,16 @@
   </script>
 </head>
 
-<!-- =========================
-     BODY
-     Default: Study Mode
-========================== -->
 <body class="study-mode">
 
-  <!-- =========================
-       APP CONTAINER
-  ========================== -->
   <div id="app" class="app-container">
 
-    <!-- LEFT MENU -->
     <aside id="section-menu" class="sidebar" aria-label="Main menu"></aside>
 
-    <!-- MAIN CHAT -->
     <main id="section-chat" class="main-area active-panel" aria-live="polite"></main>
 
-    <!-- TOOLS PANEL -->
     <aside id="section-tools" class="right-panel" aria-label="Study tools"></aside>
 
-    <!-- MOBILE NAV -->
     <nav id="mobile-nav" class="mobile-nav mobile-only" aria-label="Mobile navigation">
       <button class="nav-btn" data-target="section-menu" aria-label="Open menu">
         <span>☰</span>
@@ -89,9 +66,6 @@
 
   </div>
 
-  <!-- =========================
-       CUSTOM SUBJECT MODAL
-  ========================== -->
   <div id="custom-subject-modal" class="hidden global-modal" role="dialog" aria-modal="true">
     <div class="modal-content">
       <h3 style="color:var(--accent-blue); margin-top:0;">Add Custom Subject</h3>
@@ -122,9 +96,6 @@
     </div>
   </div>
 
-  <!-- =========================
-       MAIN SCRIPT
-  ========================== -->
   <script type="module" src="main.js"></script>
 
 </body>

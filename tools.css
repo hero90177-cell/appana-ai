@@ -11,3 +11,7 @@
 .tool-card:hover {
   background: rgba(255,255,255,0.02);
 }
+
+.tool-card h3 {
+    color: var(--text-muted);
+}

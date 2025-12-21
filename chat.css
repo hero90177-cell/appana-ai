@@ -5,12 +5,13 @@
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
-  background:
-    linear-gradient(180deg, rgba(8,10,24,0.92), rgba(5,5,16,0.92));
+  /* UPDATED: Use variable instead of hardcoded hex */
+  background: var(--glass-bg);
   backdrop-filter: blur(10px);
   z-index: 10;
   height: 55px;
   flex-shrink: 0; 
+  color: var(--text-main);
 }
 
 /* Header actions */
@@ -20,7 +21,7 @@
   gap: 10px; 
 }
 
-/* RED TIMER STYLE – refined but same logic */
+/* RED TIMER STYLE */
 .timer-display {
   display: flex; 
   align-items: center; 
@@ -29,7 +30,7 @@
   border: 1px solid rgba(239, 68, 68, 0.45); 
   padding: 4px 10px;
   border-radius: 10px;
-  color: var(--danger); 
+  color: #ef4444; /* Keep danger color independent */
   font-family: 'JetBrains Mono', monospace;
   font-weight: bold;
   font-size: 13px;
@@ -39,7 +40,7 @@
 
 @keyframes pulseRed { 
   0% { opacity: 0.85; } 
-  50% { opacity: 1; text-shadow: 0 0 10px var(--danger); } 
+  50% { opacity: 1; text-shadow: 0 0 10px #ef4444; } 
   100% { opacity: 0.85; } 
 }
 
@@ -69,13 +70,13 @@
   width: 6px; 
   height: 6px; 
   border-radius: 50%; 
-  background: #333; 
+  background: var(--text-muted); 
   transition: 0.3s; 
 }
 
 .status-dot.active { 
-  background: var(--success); 
-  box-shadow: 0 0 8px var(--success); 
+  background: #10b981; 
+  box-shadow: 0 0 8px #10b981; 
 }
 
 /* Motivation Strip */
@@ -86,10 +87,10 @@
   width: 100%;
   background: linear-gradient(
     90deg,
-    rgba(6,182,212,0.14),
-    rgba(217,70,239,0.14)
+    var(--nano-cyan),
+    var(--nano-violet)
   );
-  color: #cbd5e1;
+  color: var(--text-muted);
   text-align: center; 
   padding: 4px; 
   font-size: 10px;
@@ -125,8 +126,8 @@
   flex-direction: column; 
   gap: 18px;
   scroll-behavior: smooth;
-  background:
-    radial-gradient(circle at 50% 40%, rgba(6,182,212,0.035), transparent 60%);
+  /* Remove opaque background so global gradient shows through slightly if desired */
+  background: transparent;
 }
 
 /* Select Mode Logic */
@@ -143,8 +144,8 @@
 
 .chat-box.select-mode-active .message.selected { 
   border: 2px solid var(--accent); 
-  background: rgba(6,182,212,0.18) !important; 
-  box-shadow: 0 0 18px rgba(6,182,212,0.35);
+  background: var(--nano-cyan) !important; 
+  box-shadow: 0 0 18px var(--accent-glow);
 }
 
 /* General Message */
@@ -157,25 +158,27 @@
   word-wrap: break-word;
 }
 
-/* AI MESSAGE – clean, readable, premium */
+/* AI MESSAGE */
 .ai-message { 
   align-self: flex-start; 
   background: transparent;
   border: none;
   box-shadow: none;
-  color: #e2e8f0;
+  /* UPDATED: Use variable */
+  color: var(--text-main);
   font-size: 16px; 
   padding-left: 0;
   max-width: 95%;
 }
 
-/* USER MESSAGE – compact, modern */
+/* USER MESSAGE */
 .user-message { 
   align-self: flex-end; 
   background: linear-gradient(135deg, var(--accent), #0891b2);
-  color: white; 
+  color: #000; /* Contrast against bright accent */
+  font-weight: 500;
   border-bottom-right-radius: 3px; 
-  box-shadow: 0 4px 14px rgba(6,182,212,0.3);
+  box-shadow: 0 4px 14px var(--accent-glow);
   font-size: 13.5px;
   max-width: 65%; 
   margin-left: auto;
@@ -184,7 +187,8 @@
 /* Composer */
 .composer-area { 
   padding: 8px 12px; 
-  background: linear-gradient(180deg, #090912, #0a0a12);
+  /* UPDATED: Use glass background */
+  background: var(--glass-bg);
   border-top: 1px solid rgba(255,255,255,0.06); 
   flex-shrink: 0; 
   z-index: 20;
@@ -201,6 +205,8 @@
   height: 38px;
   min-height: 38px;
   transition: all 0.3s ease;
+  background: var(--input-bg);
+  color: var(--text-main);
 }
 
 .composer textarea:focus { 
@@ -212,7 +218,7 @@
 #file-preview { 
   margin-bottom: 6px; 
   font-size: 11px; 
-  color: var(--secondary); 
+  color: var(--text-muted); 
   background: rgba(255,255,255,0.04); 
   padding: 6px; 
   border-radius: 6px; 
