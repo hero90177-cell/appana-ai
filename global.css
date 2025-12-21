@@ -1,18 +1,33 @@
 /* ===============================
-   🎨 ROOT VARIABLES (NANO THEME)
+   APPANA AI – NANO THEME SYSTEM
    =============================== */
-:root {
-  --bg: #000000;                  /* Pure black base */
-  --panel: #050510;               /* Very dark blue-black */
-  --panel-border: 1px solid rgba(255, 255, 255, 0.08);
 
+:root {
+  /* Base backgrounds */
+  --bg-base: #0a0b14;
+  --bg-deep: #07080f;
+  --bg-pure: #000000;
+
+  /* Nano glow layers */
+  --nano-blue: rgba(30,144,255,0.14);
+  --nano-cyan: rgba(6,182,212,0.12);
+  --nano-violet: rgba(138,43,226,0.10);
+
+  /* Glass / panels */
+  --glass-bg: rgba(5, 5, 16, 0.85);
+  --glass-border: 1px solid rgba(255,255,255,0.08);
+
+  /* Accents */
   --accent: #06b6d4;              /* Cyan */
   --accent-glow: rgba(6,182,212,0.4);
-
   --secondary: #8a2be2;           /* Violet */
+  --accent-orange: #ff931e;
+
+  /* Text */
   --text-main: #e6e9ef;
   --text-muted: #9aa4b2;
 
+  /* Inputs & radius */
   --input-bg: #0b0b16;
   --radius: 16px;
 }
@@ -20,14 +35,15 @@
 /* ===============================
    🌌 BODY – NANO BACKGROUND
    =============================== */
+
 body {
   background:
-    radial-gradient(900px 500px at 88% 25%, rgba(138,43,226,0.06), transparent 45%),
-    radial-gradient(700px 400px at 50% 90%, rgba(0,255,255,0.05), transparent 45%),
-    linear-gradient(180deg, #020205 0%, #0a0a1f 100%);
+    radial-gradient(1200px 600px at 12% 10%, var(--nano-blue), transparent 42%),
+    radial-gradient(900px 500px at 88% 22%, var(--nano-violet), transparent 45%),
+    radial-gradient(700px 450px at 50% 90%, var(--nano-cyan), transparent 50%),
+    linear-gradient(180deg, var(--bg-base), var(--bg-deep));
   color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
-
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -39,6 +55,7 @@ body {
 /* ===============================
    🧩 LAYOUT GRID
    =============================== */
+
 .app-container {
   display: grid;
   grid-template-columns: 280px 1fr 300px;
@@ -51,13 +68,14 @@ body {
 /* ===============================
    🧊 COMMON PANELS (GLASS)
    =============================== */
+
 .sidebar,
 .right-panel,
 .main-area {
-  background: rgba(5, 5, 16, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: var(--panel-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--glass-border);
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
@@ -69,6 +87,7 @@ body {
 /* ===============================
    🔘 BUTTONS & INPUTS
    =============================== */
+
 button,
 select,
 input {
@@ -85,8 +104,12 @@ button {
   color: var(--text-main);
   cursor: pointer;
   font-weight: 500;
-  transition: 0.2s;
+  transition: all 0.2s ease;
   min-height: 40px;
+}
+
+button:hover {
+  filter: brightness(1.1);
 }
 
 button:active {
@@ -98,7 +121,7 @@ button.primary {
   color: #000;
   border: none;
   font-weight: 700;
-  box-shadow: 0 4px 15px var(--accent-glow);
+  box-shadow: 0 4px 18px var(--accent-glow);
 }
 
 button.icon-btn {
@@ -122,6 +145,7 @@ button.icon-btn:hover {
 /* ===============================
    🪟 MODAL
    =============================== */
+
 .global-modal {
   position: fixed;
   inset: 0;
@@ -138,12 +162,13 @@ button.icon-btn:hover {
   border-radius: var(--radius);
   width: 90%;
   max-width: 400px;
-  border: 1px solid #333;
+  border: 1px solid rgba(255,255,255,0.12);
 }
 
 /* ===============================
    ✍️ TEXTAREA
    =============================== */
+
 textarea {
   background: var(--input-bg);
   color: var(--text-main);
@@ -158,13 +183,14 @@ textarea {
 /* ===============================
    📱 MOBILE NAV
    =============================== */
+
 .mobile-nav { display: none; }
 
 @media (max-width: 900px) {
+
   .app-container {
     display: block;
     padding: 0;
-    position: relative;
     height: 100dvh;
     width: 100vw;
     overflow: hidden;
@@ -180,7 +206,7 @@ textarea {
     border-radius: 0;
     border: none;
     z-index: 10;
-    background: var(--bg);
+    background: var(--bg-pure);
     display: none;
   }
 
@@ -218,7 +244,7 @@ textarea {
 
   .nav-btn.active {
     color: var(--accent);
-    text-shadow: 0 0 10px var(--accent-glow);
+    text-shadow: 0 0 12px var(--accent-glow);
   }
 
   .nav-btn span {
@@ -229,4 +255,23 @@ textarea {
     font-size: 9px;
     font-weight: 600;
   }
+}
+
+/* ===============================
+   🌗 LIGHT MODE (NANO)
+   =============================== */
+
+body.light-mode {
+  --bg-base: #f4f7fb;
+  --bg-deep: #e9eef5;
+
+  --nano-blue: rgba(30,144,255,0.18);
+  --nano-cyan: rgba(6,182,212,0.15);
+  --nano-violet: rgba(138,43,226,0.14);
+
+  --glass-bg: rgba(255,255,255,0.65);
+  --glass-border: 1px solid rgba(0,0,0,0.08);
+
+  --text-main: #111827;
+  --text-muted: #4b5563;
 }

@@ -1,5 +1,5 @@
 // main.js
-import { loadComponents } from './loader.js'; 
+import { loadComponents } from './loader.js';
 import { setupAuthListener, checkSystemHealth } from './auth-manager.js';
 import { setupUI, loadLocalData } from './ui-manager.js';
 import { setupChat } from './chat-engine.js';
@@ -9,18 +9,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadComponents();
 
     // 2. Load Local Settings & History (XP, Subjects, Chat)
-    // ✅ MOVED UP: Must run BEFORE setupChat so the history is ready to display!
+    // ✅ Must run BEFORE setupChat so the history is ready to display!
     loadLocalData();
 
     // 3. Initialize UI (Nav, Buttons, Generators)
     setupUI();
-    
+
     // 4. Initialize Chat Engine (Send button, Voice, Render History)
     setupChat();
-    
+
     // 5. Start Auth Listener (Login/Logout)
     setupAuthListener();
 
     // 6. Start Health Checks (Ping AI & Net)
     checkSystemHealth();
+
+    // --- Optional: Apply default theme / colour mode ---
+    // You can set one of: "study-mode", "exam-mode", "amoled-mode", "light-mode"
+    document.body.classList.add("study-mode");
 });

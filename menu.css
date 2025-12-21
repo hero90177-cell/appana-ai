@@ -9,11 +9,12 @@
 }
 
 .stats-box {
-    background:#111118; 
-    padding:15px; 
-    border-radius:12px; 
-    border:1px solid rgba(255,255,255,0.1); 
-    margin-bottom:15px;
+    background: rgba(255,255,255,0.04);
+    padding: 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 15px;
+    backdrop-filter: blur(8px);
 }
 
 .menu-label {
@@ -21,7 +22,10 @@
 }
 
 .menu-select {
-    margin-top:8px; padding: 12px;
-    background: #0f0f16;
+    margin-top: 8px;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
     color: white;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
 }
