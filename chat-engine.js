@@ -1,8 +1,7 @@
-// chat-engine.js
+// chat-engine.js (vFixed - Timer Enabled + Better Text)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
-// ❌ REMOVED: import { deleteMessagesFromCloud } ... (This caused the crash)
 
 const el = id => document.getElementById(id);
 const API_URL = "/api/ai-chat";
@@ -11,11 +10,9 @@ const API_URL = "/api/ai-chat";
 export function setupChat() {
     loadChatHistory();
 
-    // Send message button
     const sendBtn = el("send-btn");
     if (sendBtn) sendBtn.onclick = handleSend;
 
-    // Handle Enter key in textarea
     const input = el("user-input");
     if (input) {
         input.addEventListener("keydown", e => {
@@ -45,12 +42,38 @@ async function handleSend() {
     const txt = input.value.trim();
     if (!txt) return;
 
-    // 🕒 Timer Safety
-    if (txt.toLowerCase() === "stop") {
+    // ✅ CRITICAL FIX: COMMAND DETECTOR FOR TIMERS
+    const lower = txt.toLowerCase();
+
+    // 1. Stop Logic
+    if (lower === "stop") {
         timer.stop();
+        appendMsg("System", "⏹ Timer stopped.", "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
+
+    // 2. Stopwatch Logic
+    if (lower.includes("start stopwatch")) {
+        timer.startStopwatch();
+        appendMsg("System", "⏱ **Stopwatch Started!** Focus now.", "ai-message", "sys_" + Date.now());
+        input.value = "";
+        return;
+    }
+
+    // 3. Timer Logic (e.g., "Set timer 20 minutes")
+    const timerMatch = lower.match(/set timer\s+(\d+)\s*(min|minute|sec|second)s?/);
+    if (timerMatch) {
+        let val = parseInt(timerMatch[1]);
+        if (timerMatch[2].startsWith("min")) val *= 60; // Convert to seconds
+        
+        timer.startTimer(val);
+        appendMsg("System", `⏳ **Timer Set:** ${Math.floor(val/60)} minutes. Go!`, "ai-message", "sys_" + Date.now());
+        input.value = "";
+        return;
+    }
+
+    // --- Standard AI Chat Logic Below ---
 
     // User Message
     const id = "u_" + Date.now();
@@ -59,9 +82,8 @@ async function handleSend() {
 
     // AI Placeholder
     const aiId = "a_" + Date.now();
-    appendMsg("🦅 Appana AI", "Thinking…", "ai-message ai-big", aiId, true);
+    appendMsg("🦅 Appana AI", "Thinking…", "ai-message", aiId, true); // Removed ai-big to keep style consistent
 
-    // Subject Context (Custom + Default)
     let context = "";
     const sub = el("subject-selector")?.value;
     if (sub) {
@@ -69,7 +91,6 @@ async function handleSend() {
             const s = STATE.customSubjects?.find(x => x.id === sub.split("_")[1]);
             if (s) context = `\nExplain simply in Indian English.\nTopic info:\n${s.content}`;
         } else if (sub.startsWith("large_")) {
-             // Handled by UI manager context injection usually, but we keep this safe
              context = `\nUse the large subject file context if available.`;
         } else {
             context = `\nUse syllabus context: ${sub}`;
@@ -89,9 +110,15 @@ async function handleSend() {
         const d = await r.json();
         const reply = d.reply || "Error occurred. Try again.";
 
+        // ✅ FORMATTING FIX: Parse Markdown for attractive text
         const aiEl = el(aiId);
         if (aiEl) {
-            aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><div class="ai-text">${reply}</div>`;
+            // Using marked.parse if available, else plain text
+            const formatted = (typeof marked !== 'undefined' && marked.parse) 
+                ? marked.parse(reply) 
+                : reply.replace(/\n/g, "<br>");
+                
+            aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><div class="ai-text">${formatted}</div>`;
         }
 
         // Update chat history state
@@ -99,7 +126,6 @@ async function handleSend() {
         if (h) h.text = reply;
         saveData();
 
-        // Save to Firebase if logged in
         if (auth.currentUser) {
             await setDoc(
                 doc(db, "users", auth.currentUser.uid, "chats", aiId),
@@ -122,7 +148,13 @@ export function appendMsg(who, txt, cls, id, save = true) {
     const d = document.createElement("div");
     d.className = `message ${cls}`;
     d.id = id;
-    d.innerHTML = `<strong>${who}:</strong> ${txt}`;
+
+    // Initial Render (uses basic replacement, real formatting happens after API load)
+    const displayTxt = (typeof marked !== 'undefined' && marked.parse && cls.includes('ai-message')) 
+        ? marked.parse(txt) 
+        : txt.replace(/\n/g, "<br>");
+
+    d.innerHTML = `<strong>${who}:</strong> ${displayTxt}`;
     chatBox.appendChild(d);
     chatBox.scrollTop = chatBox.scrollHeight;
 

@@ -1,4 +1,5 @@
-// ui-manager.js (v4.0 Crash-Proof)
+// ui-manager.js (vFixed - Delete & Timer Connected)
+import { deleteMessagesFromCloud } from './auth-manager.js'; // ✅ Imported Delete Logic
 
 export const STATE = {
     xp: 0,
@@ -12,7 +13,7 @@ export const STATE = {
 
 const el = id => document.getElementById(id);
 
-/* ---------------- TIMER ---------------- */
+/* ---------------- TIMER (Preserved) ---------------- */
 let timerInterval = null;
 let timerSeconds = 0;
 let paused = false;
@@ -39,11 +40,11 @@ export const timer = {
     update(){ const m=String(Math.floor(timerSeconds/60)).padStart(2,"0"); const s=String(timerSeconds%60).padStart(2,"0"); el("timer-val")&&(el("timer-val").innerText=`${m}:${s}`); }
 };
 
-/* ---------------- UI INIT (FIXED) ---------------- */
+/* ---------------- UI INIT ---------------- */
 export function setupUI() {
     console.log("🛠️ Setting up UI Managers...");
 
-    // 1. Navigation Logic (Safe)
+    // 1. Navigation Logic
     const navBtns = document.querySelectorAll(".nav-btn");
     if(navBtns.length > 0) {
         navBtns.forEach(btn=>{
@@ -57,8 +58,7 @@ export function setupUI() {
         });
     }
 
-    // 2. Event Listeners (Wrapped in Safety Checks)
-    // If these elements aren't loaded yet, we skip them instead of crashing
+    // 2. Event Listeners
     const click = (id, fn) => { const element = el(id); if(element) element.onclick = fn; };
 
     click("add-subject-btn", () => el("custom-subject-modal")?.classList.remove("hidden"));
@@ -68,6 +68,28 @@ export function setupUI() {
     click("mark-chapter-btn", addChapter);
     click("select-mode-btn", toggleSelectMode);
     click("cancel-select-btn", toggleSelectMode);
+    
+    // ✅ CRITICAL FIX: ENABLE DELETE BUTTON
+    click("confirm-delete-btn", async () => {
+        const ids = Array.from(STATE.selectedIds);
+        if(ids.length === 0) return;
+
+        // A. Remove from Screen (DOM)
+        ids.forEach(id => {
+            const domEl = document.getElementById(id);
+            if(domEl) domEl.remove();
+        });
+
+        // B. Remove from Memory (State)
+        STATE.chatHistory = STATE.chatHistory.filter(msg => !STATE.selectedIds.has(msg.id));
+        saveData();
+
+        // C. Remove from Cloud (Firebase)
+        await deleteMessagesFromCloud(ids);
+
+        // D. Exit Selection Mode
+        toggleSelectMode();
+    });
 
     click("add-large-subject-btn", () => el("large-subject-modal")?.classList.remove("hidden"));
     click("save-large-subject-btn", saveLargeSubject);
@@ -82,13 +104,11 @@ export function setupUI() {
     click("pdf-btn", exportChatPDF);
     click("clear-db-btn", clearAllData);
 
-    // 3. Inputs
     const subSel = el("subject-selector");
     if(subSel) {
         subSel.addEventListener("change", (e) => localStorage.setItem("appana_target_exam", e.target.value));
     }
 
-    // 4. Data Load
     try {
         initIndexedDB().then(loadLargeSubjects);
         loadLocalData();
@@ -161,7 +181,7 @@ async function initIndexedDB(){
             }
         };
         request.onsuccess=e=>{ db=e.target.result; resolve(db); };
-        request.onerror=e=>resolve(null); // Don't crash on DB error
+        request.onerror=e=>resolve(null);
     });
 }
 
@@ -240,7 +260,15 @@ function renderChapters(){
 export function toggleSelectMode(){
     STATE.selectMode=!STATE.selectMode;
     STATE.selectedIds.clear();
-    el("selection-toolbar")?.classList.toggle("hidden",!STATE.selectMode);
+    
+    const toolbar = el("selection-toolbar");
+    if(toolbar) toolbar.classList.toggle("hidden",!STATE.selectMode);
+    
+    // Clear visual selection from all messages if cancelling
+    if(!STATE.selectMode) {
+        document.querySelectorAll(".message.selected").forEach(m => m.classList.remove("selected"));
+    }
+    
     el("selection-count")&&(el("selection-count").innerText="0 Selected");
 }
 
@@ -267,7 +295,6 @@ function sendToolRequest(command) {
 }
 
 function exportChatPDF(){
-    // Dynamic import to prevent crash if library missing
     import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
     .then(jsPDF=>{
         const doc=new jsPDF.jsPDF();

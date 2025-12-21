@@ -1,5 +1,5 @@
 /* ============================
-   chat.css - vFinal Polished
+   chat.css - vFinal Polished (Fixed)
    ============================ */
 
 /* CHAT HEADER */
@@ -24,7 +24,7 @@
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; transition: 0.3s; }
 .status-dot.active { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
 
-/* MOTIVATION BAR (FIXED: No Overlap) */
+/* MOTIVATION BAR */
 #sticky-motivation {
   position: relative;
   background: linear-gradient(90deg, #1e1b4b, #312e81);
@@ -41,7 +41,7 @@
 
 /* SELECTION TOOLBAR */
 #selection-toolbar {
-  background: #3f6212; /* Greenish for action */
+  background: #3f6212;
   color: white;
   padding: 10px;
   display: flex;
@@ -59,29 +59,36 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* Ensure it doesn't hide behind composer */
   padding-bottom: 80px; 
 }
 
-/* MESSAGES */
+/* MESSAGES COMMON */
 .message {
-  max-width: 85%;
-  padding: 12px 16px;
+  max-width: 90%; /* Increased width */
+  padding: 8px 12px;
   border-radius: 16px;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px; /* Bigger Base Font */
+  line-height: 1.6;
   position: relative;
   word-wrap: break-word;
 }
 
-/* AI Message */
+/* ✅ AI Message - FIXED: Transparent & Bigger */
 .ai-message {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent !important; /* No Bubble */
+  border: none !important; /* No Border */
   color: #e2e8f0;
-  border-top-left-radius: 4px;
+  padding-left: 0;
+  width: 100%; /* Full width for better reading */
+  max-width: 100%;
 }
+
+/* Attractive AI Text Formatting */
+.ai-message strong { color: #22d3ee; } /* Cyan for names/headers */
+.ai-message p { margin: 8px 0; font-size: 17px; } /* Bigger text */
+.ai-message ul { padding-left: 20px; color: #cbd5e1; }
+.ai-message li { margin-bottom: 6px; }
 
 /* User Message */
 .user-message {
@@ -91,15 +98,17 @@
   font-weight: 500;
   border-bottom-right-radius: 4px;
   box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+  max-width: 80%;
 }
 
 /* SELECTION VISUALS */
 .message.selected {
-  border: 2px solid #bef264;
+  border: 2px solid #bef264 !important;
   background: rgba(190, 242, 100, 0.1) !important;
+  border-radius: 12px;
 }
 
-/* COMPOSER (IMPROVED) */
+/* COMPOSER */
 .composer-area {
   position: sticky;
   bottom: 0;
@@ -108,7 +117,6 @@
   border-top: 1px solid rgba(255,255,255,0.08);
   padding: 12px 16px;
   z-index: 100;
-  /* Safe area for mobile iPhones */
   padding-bottom: env(safe-area-inset-bottom, 12px);
 }
 
@@ -129,7 +137,7 @@
   color: white;
   padding: 10px 4px;
   max-height: 120px;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
 }
 .composer textarea:focus { outline: none; }
