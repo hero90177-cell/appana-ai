@@ -36,6 +36,7 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   height: 100dvh;
   overflow: hidden;
+  margin: 0; /* Reset default margin */
 }
 
 .hidden { display: none !important; }
@@ -95,7 +96,7 @@ textarea {
   outline: none;
 }
 
-/* 📱 MOBILE */
+/* 📱 MOBILE LAYOUT & NAVIGATION */
 @media (max-width: 900px) {
   .app-container {
     display: block;
@@ -107,13 +108,50 @@ textarea {
   .right-panel {
     position: fixed;
     inset: 0;
-    bottom: 60px;
+    bottom: 60px; /* Leave space for bottom nav */
     display: none;
     border-radius: 0;
     background: var(--bg-pure);
+    z-index: 10;
   }
 
   .active-panel {
     display: flex !important;
   }
+
+  /* ✅ FIXED: Added missing Mobile Navigation Styles */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .nav-btn span { font-size: 22px; margin-bottom: 2px; }
+  .nav-btn.active { color: var(--accent); }
 }

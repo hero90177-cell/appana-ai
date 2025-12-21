@@ -7,9 +7,9 @@ export async function loadComponents() {
     ];
 
     const promises = components.map(async (comp) => {
-        // 1. Fetch HTML Content
+        // 1. Fetch HTML Content (Added timestamp to bypass cache)
         try {
-            const response = await fetch(comp.html);
+            const response = await fetch(`${comp.html}?v=${Date.now()}`);
             if (!response.ok) throw new Error(`Failed to load ${comp.html}`);
             const text = await response.text();
 
