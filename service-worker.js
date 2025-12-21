@@ -1,6 +1,7 @@
-// ✅ Appana Service Worker v17 (Updated cache for v3.1)
+// ✅ Appana Service Worker v18 (FIXED CACHE)
+// We changed v17 -> v18 to force your mobile to load the new design
 
-const CACHE_NAME="appana-v17-offline-ready";
+const CACHE_NAME="appana-v18-offline-ready";
 
 const ASSETS=[
   "/", "/index.html", "/global.css", "/manifest.json", "/firebase-init.js",
@@ -12,7 +13,7 @@ const ASSETS=[
   "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
   "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
 
-  // External
+  // External Libraries
   "https://cdn.jsdelivr.net/npm/marked/marked.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
   "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js",
