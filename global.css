@@ -3,39 +3,29 @@
    =============================== */
 
 :root {
-  /* Base backgrounds */
   --bg-base: #0a0b14;
   --bg-deep: #07080f;
-  --bg-pure: #000000;
+  --bg-pure: #000;
 
-  /* Nano glow layers */
   --nano-blue: rgba(30,144,255,0.14);
-  --nano-cyan: rgba(6,182,212,0.12);
-  --nano-violet: rgba(138,43,226,0.10);
+  --nano-cyan: rgba(6,182,212,0.14);
+  --nano-violet: rgba(138,43,226,0.12);
 
-  /* Glass / panels -- REDUCED OPACITY FOR BETTER VISIBILITY */
-  --glass-bg: rgba(5, 5, 16, 0.75); 
+  --glass-bg: rgba(6, 6, 18, 0.75);
   --glass-border: 1px solid rgba(255,255,255,0.08);
 
-  /* Accents */
-  --accent: #06b6d4;              /* Cyan */
-  --accent-glow: rgba(6,182,212,0.4);
-  --secondary: #8a2be2;           /* Violet */
-  --accent-orange: #ff931e;
+  --accent: #06b6d4;
+  --accent-glow: rgba(6,182,212,0.45);
+  --secondary: #8a2be2;
 
-  /* Text */
   --text-main: #e6e9ef;
   --text-muted: #9aa4b2;
 
-  /* Inputs & radius */
-  --input-bg: rgba(0,0,0,0.3); /* Made slightly transparent */
+  --input-bg: rgba(0,0,0,0.35);
   --radius: 16px;
 }
 
-/* ===============================
-   🌌 BODY – NANO BACKGROUND
-   =============================== */
-
+/* 🌌 BODY – NANO BACKGROUND */
 body {
   background:
     radial-gradient(1200px 600px at 12% 10%, var(--nano-blue), transparent 42%),
@@ -44,157 +34,72 @@ body {
     linear-gradient(180deg, var(--bg-base), var(--bg-deep));
   color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
-  height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  font-size: 14px;
 }
 
 .hidden { display: none !important; }
 
-/* ===============================
-   🧩 LAYOUT GRID
-   =============================== */
-
+/* 🧩 MAIN GRID */
 .app-container {
   display: grid;
   grid-template-columns: 280px 1fr 300px;
   gap: 12px;
   padding: 12px;
   height: 100%;
-  width: 100%;
 }
 
-/* ===============================
-   🧊 COMMON PANELS (GLASS)
-   =============================== */
-
+/* 🧊 PANELS */
 .sidebar,
-.right-panel,
-.main-area {
+.main-area,
+.right-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: var(--glass-border);
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
-  position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
 
-/* ===============================
-   🔘 BUTTONS & INPUTS
-   =============================== */
-
-button,
-select,
-input {
-  width: 100%;
-  border-radius: 10px;
-  font-size: 13px;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-
+/* 🔘 BUTTONS */
 button {
-  padding: 12px;
-  margin-top: 8px;
-  background: rgba(255,255,255,0.05); /* Softer button bg */
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
   color: var(--text-main);
+  border-radius: 10px;
+  padding: 10px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  min-height: 40px;
+  transition: 0.2s;
 }
 
 button:hover {
   background: rgba(255,255,255,0.1);
-  filter: brightness(1.1);
-}
-
-button:active {
-  transform: scale(0.98);
 }
 
 button.primary {
   background: var(--accent);
   color: #000;
-  border: none;
   font-weight: 700;
-  box-shadow: 0 4px 18px var(--accent-glow);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
-button.icon-btn {
-  padding: 8px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text-muted);
-}
-
-button.icon-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-/* ===============================
-   🪟 MODAL
-   =============================== */
-
-.global-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.9);
-  z-index: 2000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background: #0b0b12;
-  padding: 20px;
-  border-radius: var(--radius);
-  width: 90%;
-  max-width: 400px;
-  border: 1px solid rgba(255,255,255,0.12);
-}
-
-/* ===============================
-   ✍️ TEXTAREA
-   =============================== */
-
+/* ✍️ TEXTAREA */
 textarea {
   background: var(--input-bg);
   color: var(--text-main);
   border: 1px solid rgba(255,255,255,0.1);
-  width: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 10px;
-  outline: none;
   resize: none;
+  outline: none;
 }
 
-/* ===============================
-   📱 MOBILE NAV
-   =============================== */
-
-.mobile-nav { display: none; }
-
+/* 📱 MOBILE */
 @media (max-width: 900px) {
-
   .app-container {
     display: block;
     padding: 0;
-    height: 100dvh;
-    width: 100vw;
-    overflow: hidden;
   }
 
   .sidebar,
@@ -203,77 +108,12 @@ textarea {
     position: fixed;
     inset: 0;
     bottom: 60px;
-    width: 100%;
-    border-radius: 0;
-    border: none;
-    z-index: 10;
-    background: var(--bg-pure);
     display: none;
+    border-radius: 0;
+    background: var(--bg-pure);
   }
 
   .active-panel {
     display: flex !important;
   }
-
-  .mobile-nav {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background: rgba(0,0,0,0.95);
-    border-top: 1px solid rgba(255,255,255,0.1);
-    z-index: 9999;
-    justify-content: space-around;
-    align-items: center;
-    backdrop-filter: blur(10px);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .nav-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    margin: 0;
-    padding: 0;
-  }
-
-  .nav-btn.active {
-    color: var(--accent);
-    text-shadow: 0 0 12px var(--accent-glow);
-  }
-
-  .nav-btn span {
-    font-size: 20px;
-  }
-
-  .nav-btn small {
-    font-size: 9px;
-    font-weight: 600;
-  }
-}
-
-/* ===============================
-   🌗 LIGHT MODE (NANO)
-   =============================== */
-
-body.light-mode {
-  --bg-base: #f4f7fb;
-  --bg-deep: #e9eef5;
-
-  --nano-blue: rgba(30,144,255,0.18);
-  --nano-cyan: rgba(6,182,212,0.15);
-  --nano-violet: rgba(138,43,226,0.14);
-
-  --glass-bg: rgba(255,255,255,0.65);
-  --glass-border: 1px solid rgba(0,0,0,0.08);
-
-  --text-main: #111827;
-  --text-muted: #4b5563;
-  --input-bg: rgba(255,255,255,0.8);
 }

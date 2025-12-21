@@ -1,7 +1,9 @@
 <div class="tool-card">
-  <h3 style="margin-top:0; color:#a1a1aa;">⚡ Generators</h3>
-  <input id="topic-input" placeholder="Enter Topic (e.g. Gravity)" style="padding:12px;">
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+  <h3>⚡ Generators</h3>
+
+  <input id="topic-input" placeholder="Enter Topic (e.g. Gravity)">
+
+  <div class="tool-grid">
     <button id="gen-notes-btn">Notes</button>
     <button id="gen-mcq-btn">Quiz</button>
     <button id="gen-imp-btn">Imp Qs</button>
@@ -10,14 +12,20 @@
 </div>
 
 <div class="tool-card">
-  <h3 style="margin-top:0; color:#a1a1aa;">⚙ Tools</h3>
+  <h3>⚙ Tools</h3>
+
   <button id="pdf-btn">Download PDF Chat</button>
-  
-  <div style="margin-top:20px;">
-    <h4 style="margin:0 0 10px 0;">Chapter Tracker</h4>
-    <div style="display:flex; gap:5px;"><input id="chapter-name" placeholder="Name"><button id="mark-chapter-btn" style="width:50px;">+</button></div>
-    <div id="chapter-list" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div>
+
+  <div class="chapter-box">
+    <h4>Chapter Tracker</h4>
+    <div class="chapter-input">
+      <input id="chapter-name" placeholder="Name">
+      <button id="mark-chapter-btn">+</button>
+    </div>
+    <div id="chapter-list"></div>
   </div>
-  
-  <button id="clear-db-btn" style="margin-top:20px; background:#3f1818; color:#fca5a5; border:1px solid #7f1d1d;">⚠ Factory Reset</button>
+
+  <button id="clear-db-btn" class="danger">
+    ⚠ Factory Reset
+  </button>
 </div>

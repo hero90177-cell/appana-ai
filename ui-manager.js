@@ -1,4 +1,4 @@
-// ui-manager.js - colour-enhanced
+// ui-manager.js (v3.3 Final - Stable & Persistent)
 
 export const STATE = {
     xp: 0,
@@ -6,208 +6,299 @@ export const STATE = {
     chapters: [],
     selectMode: false,
     selectedIds: new Set(),
-    chatHistory: []
+    chatHistory: [],
+    largeSubjects: [] // IndexedDB
 };
 
 const el = id => document.getElementById(id);
 
-// ---------------- TIMER ----------------
+/* ---------------- TIMER ---------------- */
 let timerInterval = null;
 let timerSeconds = 0;
-let timerMode = 'stopwatch';
+let paused = false;
+let timerMode = null;
 
 export const timer = {
-    startStopwatch: () => {
-        timer.stop();
-        timerMode = 'stopwatch';
-        timerSeconds = 0;
-        timer.run();
+    startStopwatch() { timer.stop(); timerMode="stopwatch"; timerSeconds=0; paused=false; timer.run(); },
+    startTimer(seconds) { timer.stop(); timerMode="timer"; timerSeconds=seconds; paused=false; timer.run(); },
+    run() {
+        if(timerInterval) clearInterval(timerInterval);
+        const box=el("magic-timer"); if(!box) return;
+        box.classList.remove("hidden");
+        timerInterval=setInterval(()=>{
+            if(paused) return;
+            timerSeconds = timerMode==="stopwatch" ? timerSeconds+1 : timerSeconds-1;
+            if(timerMode==="timer" && timerSeconds<=0){ timer.stop(); alert("⏰ Time is up!"); }
+            timer.update();
+        },1000);
+        timer.update();
     },
-    startTimer: (durationSeconds) => {
-        timer.stop();
-        timerMode = 'timer';
-        timerSeconds = durationSeconds;
-        timer.run();
-    },
-    run: () => {
-        const magicEl = el("magic-timer");
-        if(!magicEl) return;
-        magicEl.classList.remove("hidden");
-        el("timer-icon").innerText = timerMode === 'timer' ? '⏳' : '⏱';
-        el("timer-icon").style.color = "var(--accent-blue)";
-        el("timer-val").style.color = "var(--text-main)";
-
-        timerInterval = setInterval(() => {
-            if (timerMode === 'stopwatch') timerSeconds++;
-            else {
-                timerSeconds--;
-                if (timerSeconds <= 0) {
-                    timer.stop();
-                    alert("⏰ Time is up!");
-                    return;
-                }
-            }
-            timer.updateDisplay();
-        }, 1000);
-        timer.updateDisplay();
-    },
-    pause: () => clearInterval(timerInterval),
-    stop: () => {
-        clearInterval(timerInterval);
-        const magicEl = el("magic-timer");
-        if(magicEl) magicEl.classList.add("hidden");
-        timerSeconds = 0;
-        timer.updateDisplay();
-    },
-    reset: () => { timerSeconds = 0; timer.updateDisplay(); },
-    updateDisplay: () => {
-        const h = Math.floor(timerSeconds / 3600);
-        const m = Math.floor((timerSeconds % 3600) / 60).toString().padStart(2,'0');
-        const s = (timerSeconds % 60).toString().padStart(2,'0');
-        el("timer-val").innerText = h>0?`${h}:${m}:${s}`:`${m}:${s}`;
-    }
+    pause(){ paused=true; },
+    resume(){ paused=false; },
+    reset(){ timerSeconds=0; timer.update(); },
+    stop(){ clearInterval(timerInterval); timerInterval=null; timerSeconds=0; paused=false; timerMode=null; el("magic-timer")?.classList.add("hidden"); },
+    update(){ const m=String(Math.floor(timerSeconds/60)).padStart(2,"0"); const s=String(timerSeconds%60).padStart(2,"0"); el("timer-val")&&(el("timer-val").innerText=`${m}:${s}`); }
 };
 
-// ---------------- UI ----------------
+/* ---------------- UI INIT ---------------- */
 export function setupUI() {
-    const navBtns = document.querySelectorAll('.nav-btn');
-    const sections = ['section-menu','section-chat','section-tools'];
-
-    navBtns.forEach(btn => {
-        btn.onclick = () => {
-            navBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const targetId = btn.getAttribute('data-target');
-            sections.forEach(secId => {
-                const section = el(secId);
-                if(section) {
-                    if(secId===targetId) section.classList.add('active-panel');
-                    else section.classList.remove('active-panel');
-                }
-            });
+    // 1. Navigation Logic
+    document.querySelectorAll(".nav-btn").forEach(btn=>{
+        btn.onclick=()=>{
+            document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+            btn.classList.add("active");
+            document.querySelectorAll(".panel, .main-area, .sidebar, .right-panel").forEach(p=>p.classList.remove("active-panel"));
+            el(btn.dataset.target)?.classList.add("active-panel");
         };
     });
 
-    // Motivation
-    const quotes = ["Dream Big.","Work Hard.","Stay Focused.","No Excuses.","You Got This.","Believe.","Hustle."];
-    const q = quotes[Math.floor(Math.random()*quotes.length)];
-    if(el('sidebar-motivation-text')) {
-        el('sidebar-motivation-text').innerText = q;
-        el('sidebar-motivation-text').style.color = "var(--text-main)";
-    }
-    if(el('sticky-motivation')) {
-        el('sticky-motivation').innerText = `💡 "${q}"`;
-        el('sticky-motivation').style.color = "var(--nano-blue)";
-    }
+    // 2. Custom Subject Modal
+    el("add-subject-btn")?.onclick=()=>el("custom-subject-modal").classList.remove("hidden");
+    el("close-modal-btn")?.onclick=()=>el("custom-subject-modal").classList.add("hidden");
+    el("save-subject-btn")?.onclick=saveCustomSubject;
 
-    // Modal & Tools buttons
-    ["add-subject-btn","close-modal-btn","save-subject-btn","mark-chapter-btn","clear-db-btn","select-mode-btn","cancel-select-btn"].forEach(id=>{
-        const e=el(id);
-        if(e) e.style.color = "var(--text-main)";
+    // 3. Chapter & Select Mode
+    el("mark-chapter-btn")?.onclick=addChapter;
+    el("select-mode-btn")?.onclick=toggleSelectMode;
+    el("cancel-select-btn")?.onclick=toggleSelectMode;
+
+    // 4. Large Subject Modal (Handlers)
+    el("add-large-subject-btn")?.onclick=()=>el("large-subject-modal").classList.remove("hidden");
+    el("save-large-subject-btn")?.onclick=saveLargeSubject;
+    el("close-large-modal-btn")?.onclick=()=>el("large-subject-modal").classList.add("hidden"); // ✅ Added JS Handler
+
+    // 5. Tools Panel - AI Connected
+    el("gen-notes-btn")?.onclick=()=>sendToolRequest("Generate notes");
+    el("gen-mcq-btn")?.onclick=()=>sendToolRequest("Generate MCQs");
+    el("gen-imp-btn")?.onclick=()=>sendToolRequest("Generate important points");
+    el("gen-passage-btn")?.onclick=()=>sendToolRequest("Generate passage");
+
+    el("pdf-btn")?.onclick=exportChatPDF;
+    el("clear-db-btn")?.onclick=clearAllData;
+
+    // 6. Target Exam Persistence Listener
+    el("subject-selector")?.addEventListener("change", (e) => {
+        localStorage.setItem("appana_target_exam", e.target.value);
     });
 
-    el("add-subject-btn")?.addEventListener("click", ()=>el("custom-subject-modal").classList.remove("hidden"));
-    el("close-modal-btn")?.addEventListener("click", ()=>el("custom-subject-modal").classList.add("hidden"));
-    el("save-subject-btn")?.addEventListener("click", saveCustomSubject);
-    el("mark-chapter-btn")?.addEventListener("click", addChapter);
-    el("clear-db-btn")?.addEventListener("click", ()=>{ if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } });
-
-    // Select mode
-    el("select-mode-btn")?.addEventListener("click", toggleSelectMode);
-    el("cancel-select-btn")?.addEventListener("click", toggleSelectMode);
+    // 7. Load Data
+    initIndexedDB().then(loadLargeSubjects);
+    loadLocalData();
 }
 
-// ---------------- SELECT MODE ----------------
-export function toggleSelectMode() {
-    STATE.selectMode = !STATE.selectMode;
-    STATE.selectedIds.clear();
-    const box = el("chat-box");
-    const toolbar = el("selection-toolbar");
-
-    if (STATE.selectMode) {
-        box?.classList.add("select-mode-active");
-        toolbar?.classList.remove("hidden");
-    } else {
-        box?.classList.remove("select-mode-active");
-        toolbar?.classList.add("hidden");
-        document.querySelectorAll(".message.selected").forEach(m=>m.classList.remove("selected"));
-    }
-    el("selection-count").innerText = "0 Selected";
-}
-
-// ---------------- DATA ----------------
+/* ---------------- LOCAL STORAGE ---------------- */
 export function loadLocalData() {
-    const s = JSON.parse(localStorage.getItem("appana_v3"));
-    if(s) Object.assign(STATE,s);
-
-    if(el("user-xp")) {
-        el("user-xp").innerText = STATE.xp;
-        el("user-xp").style.color = "var(--accent-blue)";
-    }
-    renderCustomSubjects();
-    renderChapters();
-}
-
-export function saveData() {
-    localStorage.setItem("appana_v3", JSON.stringify(STATE));
-}
-
-// ---------------- CUSTOM SUBJECTS ----------------
-function saveCustomSubject() {
-    const name = el("custom-sub-name").value;
-    const content = el("custom-sub-text").value;
-    if(!name) return alert("Please enter a subject name.");
-
-    STATE.customSubjects.push({id:Date.now(),name,content:content||"No description."});
-    saveData();
-    renderCustomSubjects();
-
-    el("custom-sub-name").value="";
-    el("custom-sub-text").value="";
-    el("custom-subject-modal").classList.add("hidden");
-    alert(`Subject "${name}" saved to storage!`);
-}
-
-function renderCustomSubjects() {
-    const group = el("custom-subjects-group");
-    if(!group) return;
-    group.innerHTML = "";
-    STATE.customSubjects.forEach(s=>{
-        const o=document.createElement("option");
-        o.value = "custom_" + s.id;
-        o.innerText = "★ "+s.name;
-        o.style.color = "var(--text-main)";
-        group.appendChild(o);
-    });
-}
-
-// ---------------- CHAPTERS ----------------
-function addChapter() {
-    const val = el("chapter-name").value;
-    if(val) {
-        STATE.chapters.push({name:val,done:false});
-        el("chapter-name").value="";
-        saveData();
+    const raw=localStorage.getItem("appana_v3"); 
+    if(raw) {
+        const data=JSON.parse(raw);
+        STATE.xp=data.xp||0;
+        STATE.customSubjects=data.customSubjects||[];
+        STATE.chapters=data.chapters||[];
+        STATE.chatHistory=data.chatHistory||[];
+        renderCustomSubjects();
         renderChapters();
     }
+
+    // ✅ RESTORE SAVED TARGET EXAM
+    const savedTarget = localStorage.getItem("appana_target_exam");
+    if (savedTarget && el("subject-selector")) {
+        el("subject-selector").value = savedTarget;
+    }
 }
 
-function renderChapters() {
-    const list = el("chapter-list");
-    if(!list) return;
+export function saveData(){
+    localStorage.setItem("appana_v3",JSON.stringify({
+        xp:STATE.xp,
+        customSubjects:STATE.customSubjects,
+        chapters:STATE.chapters,
+        chatHistory:STATE.chatHistory
+    }));
+}
+
+/* ---------------- CUSTOM SUBJECTS ---------------- */
+function saveCustomSubject(){
+    const name=el("custom-sub-name").value.trim();
+    const content=el("custom-sub-text").value.trim();
+    if(!name) return alert("Subject name required");
+
+    STATE.customSubjects.push({ id:crypto.randomUUID(), name, content });
+    saveData();
+    renderCustomSubjects();
+    el("custom-subject-modal").classList.add("hidden");
+}
+
+function renderCustomSubjects(){
+    const sel=el("custom-subjects-group"); if(!sel) return;
+    sel.innerHTML="";
+    STATE.customSubjects.forEach(s=>{
+        const o=document.createElement("option");
+        o.value=`custom_${s.id}`;
+        o.textContent=`★ ${s.name}`;
+        sel.appendChild(o);
+    });
+}
+
+/* ---------------- LARGE SUBJECTS (IndexedDB) ---------------- */
+let db=null;
+async function initIndexedDB(){
+    return new Promise((resolve,reject)=>{
+        const request=indexedDB.open("appana_large_subjects",1);
+        request.onupgradeneeded=e=>{
+            db=e.target.result;
+            db.createObjectStore("subjects",{keyPath:"id"});
+        };
+        request.onsuccess=e=>{ db=e.target.result; resolve(db); };
+        request.onerror=e=>reject(e);
+    });
+}
+
+async function saveLargeSubject(){
+    const name=el("large-sub-name").value.trim();
+    const fileInput=el("large-sub-file");
+    if(!name || !fileInput.files.length) return alert("Name & file required");
+
+    const file=fileInput.files[0];
+    const reader=new FileReader();
+    reader.onload = function(e) {
+        const dataURL = e.target.result;
+        const obj = { id: crypto.randomUUID(), name, content: dataURL };
+
+        // ✅ FIXED: Standard IndexedDB Transaction Logic
+        const tx = db.transaction("subjects", "readwrite");
+        const store = tx.objectStore("subjects");
+        store.add(obj);
+
+        tx.oncomplete = () => {
+            STATE.largeSubjects.push(obj);
+            renderLargeSubjects();
+            el("large-subject-modal").classList.add("hidden");
+            el("large-sub-name").value = "";
+            el("large-sub-file").value = "";
+        };
+
+        tx.onerror = () => alert("Error saving large file to database.");
+    };
+    reader.readAsDataURL(file);
+}
+
+async function loadLargeSubjects(){
+    if(!db) return;
+    const tx=db.transaction("subjects","readonly");
+    const store=tx.objectStore("subjects");
+    
+    return new Promise((resolve) => {
+        const req = store.getAll();
+        req.onsuccess = () => {
+            STATE.largeSubjects = req.result || [];
+            renderLargeSubjects();
+            
+            // Re-apply target selection in case it was a large file
+            const savedTarget = localStorage.getItem("appana_target_exam");
+            if(savedTarget && savedTarget.startsWith("large_")) {
+                 el("subject-selector").value = savedTarget;
+            }
+            resolve();
+        };
+    });
+}
+
+function renderLargeSubjects(){
+    const sel=el("large-subjects-group"); if(!sel) return;
+    sel.innerHTML="";
+    STATE.largeSubjects.forEach(s=>{
+        const o=document.createElement("option");
+        o.value=`large_${s.id}`;
+        o.textContent=`📂 ${s.name}`;
+        sel.appendChild(o);
+    });
+}
+
+/* ---------------- CHAPTERS ---------------- */
+function addChapter(){
+    const v=el("chapter-name").value.trim();
+    if(!v) return;
+    STATE.chapters.push({ name:v, done:false });
+    saveData();
+    renderChapters();
+    el("chapter-name").value="";
+}
+
+function renderChapters(){
+    const list=el("chapter-list"); if(!list) return;
     list.innerHTML="";
     STATE.chapters.forEach((c,i)=>{
-        const d = document.createElement("div");
-        d.innerHTML=`<span style="color:${c.done?'#10b981':'var(--text-main)'}; text-decoration:${c.done?'line-through':'none'}">${c.name}</span> <button onclick="window.delChap(${i})" style="width:auto;padding:2px;color:var(--accent-blue);">x</button>`;
-        d.onclick = e=>{
-            if(e.target.tagName!=='BUTTON') {
-                STATE.chapters[i].done=!STATE.chapters[i].done;
-                saveData();
-                renderChapters();
-            }
+        const d=document.createElement("div");
+        d.innerHTML=`<span style="text-decoration:${c.done?"line-through":"none"}">${c.name}</span>
+                     <button data-i="${i}">✖</button>`;
+        d.onclick=e=>{
+            if(e.target.tagName==="BUTTON") STATE.chapters.splice(i,1);
+            else c.done=!c.done;
+            saveData();
+            renderChapters();
         };
         list.appendChild(d);
     });
 }
-window.delChap = i=>{STATE.chapters.splice(i,1);saveData();renderChapters();};
+
+/* ---------------- SELECT MODE ---------------- */
+export function toggleSelectMode(){
+    STATE.selectMode=!STATE.selectMode;
+    STATE.selectedIds.clear();
+    el("selection-toolbar")?.classList.toggle("hidden",!STATE.selectMode);
+    el("selection-count")&&(el("selection-count").innerText="0 Selected");
+}
+
+/* ---------------- TOOLS PANEL LOGIC ---------------- */
+function sendToolRequest(command) {
+    const topicInput = el("topic-input"); 
+    const topic = topicInput?.value.trim() || "";
+    const fullMessage = topic ? `${command} for ${topic}` : command;
+
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel, .main-area, .sidebar, .right-panel").forEach(p => p.classList.remove("active-panel"));
+
+    const chatPanel = el("section-chat");
+    if (chatPanel) chatPanel.classList.add("active-panel");
+
+    const chatNavBtn = document.querySelector(`.nav-btn[data-target="section-chat"]`);
+    if (chatNavBtn) chatNavBtn.classList.add("active");
+
+    const inputBox = el("user-input");
+    const sendBtn = el("send-btn");
+    if (inputBox && sendBtn) {
+        inputBox.value = fullMessage;
+        sendBtn.click();
+    }
+}
+
+function exportChatPDF(){
+    import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(jsPDF=>{
+        const doc=new jsPDF.jsPDF();
+        let y=10;
+        STATE.chatHistory.forEach(m=>{
+            const txt=(m.who==="You"?"👤 ":"🤖 ") + (m.text || m.msg || "");
+            const lines = doc.splitTextToSize(txt, 180);
+            doc.text(lines,10,y);
+            y += lines.length * 7; 
+            if (y > 280) { doc.addPage(); y = 10; }
+        });
+        doc.save("Appana_Chat.pdf");
+    });
+}
+
+function clearAllData(){
+    if(!confirm("⚠ Are you sure? This will delete all history, subjects, and XP.")) return;
+    localStorage.clear();
+    if(db){
+        const tx=db.transaction("subjects","readwrite");
+        tx.objectStore("subjects").clear();
+    }
+    STATE.customSubjects=[];
+    STATE.chapters=[];
+    STATE.chatHistory=[];
+    STATE.largeSubjects=[];
+    renderCustomSubjects();
+    renderChapters();
+    renderLargeSubjects();
+    window.location.reload();
+}

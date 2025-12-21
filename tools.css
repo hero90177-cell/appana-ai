@@ -1,17 +1,15 @@
-/* Tools Specific Styles */
-.right-panel { padding: 18px; gap: 16px; overflow-y: auto; }
-
-.tool-card {
-  background: transparent;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding-bottom: 15px;
-  transition: background 0.3s ease;
+.right-panel {
+  padding: 16px;
+  gap: 16px;
+  overflow-y: auto;
 }
 
-.tool-card:hover {
-  background: rgba(255,255,255,0.02);
+.tool-card {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .tool-card h3 {
-    color: var(--text-muted);
+  font-size: 13px;
+  color: var(--text-muted);
 }

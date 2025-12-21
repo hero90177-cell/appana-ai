@@ -5,26 +5,38 @@ import { setupUI, loadLocalData } from './ui-manager.js';
 import { setupChat } from './chat-engine.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Wait for HTML Components (Menu, Chat, Tools) to inject
+
+    /* 1️⃣ Load HTML components */
     await loadComponents();
 
-    // 2. Load Local Settings & History (XP, Subjects, Chat)
-    // ✅ Must run BEFORE setupChat so the history is ready to display!
+    /* 2️⃣ Load local storage (XP, subjects, chat history) */
     loadLocalData();
 
-    // 3. Initialize UI (Nav, Buttons, Generators)
+    /* 3️⃣ Setup UI (menus, buttons, tools) */
     setupUI();
 
-    // 4. Initialize Chat Engine (Send button, Voice, Render History)
+    /* 4️⃣ Setup chat engine */
     setupChat();
 
-    // 5. Start Auth Listener (Login/Logout)
+    /* 5️⃣ Setup auth */
     setupAuthListener();
 
-    // 6. Start Health Checks (Ping AI & Net)
-    checkSystemHealth();
+    /* 6️⃣ HEALTH CHECK — SAFE DELAY */
+    setTimeout(() => {
+        if (
+            document.getElementById("net-status") &&
+            document.getElementById("api-status")
+        ) {
+            checkSystemHealth();
+        }
+    }, 1200);
 
-    // --- Optional: Apply default theme / colour mode ---
-    // You can set one of: "study-mode", "exam-mode", "amoled-mode", "light-mode"
+    /* 7️⃣ Default theme */
     document.body.classList.add("study-mode");
+
+    /* 8️⃣ PWA INSTALL SUPPORT */
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+    });
 });

@@ -1,33 +1,33 @@
-/* Menu Specific Styles */
-.sidebar { padding: 18px; gap: 16px; overflow-y: auto; }
+.sidebar {
+  padding: 16px;
+  gap: 16px;
+  overflow-y: auto;
+}
 
-.motivation-card { 
-    background: linear-gradient(135deg, var(--bg-deep), #701a75); 
-    border: none; padding: 12px; border-radius: 12px; 
-    text-align: center; margin-bottom: 10px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+.motivation-card {
+  background: linear-gradient(135deg, var(--bg-deep), #701a75);
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
 }
 
 .stats-box {
-    background: rgba(255,255,255,0.04);
-    padding: 15px;
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 15px;
-    backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.04);
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .menu-label {
-    display:block; margin-top:15px; font-size:12px; 
-    color: var(--text-muted);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 14px;
 }
 
 .menu-select {
-    margin-top: 8px;
-    padding: 12px;
-    /* UPDATED: Use global input background */
-    background: var(--input-bg);
-    color: var(--text-main);
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--input-bg);
+  color: var(--text-main);
+  border-radius: 10px;
 }

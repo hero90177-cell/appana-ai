@@ -1,11 +1,16 @@
-<header style="display:flex; align-items:center; gap:12px; margin-bottom: 20px;">
+<header style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
   <div style="font-size:28px;">🦅</div>
-  <div><h1 style="margin:0; font-size:20px;">Appana AI</h1><small style="color:#94a3b8;">Ultra Indian Techno</small></div>
+  <div>
+    <h1 style="margin:0; font-size:20px;">Appana AI</h1>
+    <small style="color:#94a3b8;">Ultra Indian Techno</small>
+  </div>
 </header>
 
 <div class="motivation-card">
-    <h4 style="color:#e0e7ff; margin-top:0;">🔥 Motivation Boost</h4>
-    <div id="sidebar-motivation-text" style="color:white; font-style:italic;">Loading inspiration...</div>
+  <h4 style="color:#e0e7ff; margin-top:0;">🔥 Motivation Boost</h4>
+  <div id="sidebar-motivation-text" style="color:white; font-style:italic;">
+    Loading inspiration...
+  </div>
 </div>
 
 <div class="stats-box">
@@ -14,19 +19,25 @@
 </div>
 
 <section>
+
   <button id="add-subject-btn" class="primary">➕ Add Custom Subject</button>
   
+  <button id="add-large-subject-btn" class="primary" style="margin-top:10px;">📂 Add Large Subject</button>
+
   <label class="menu-label">Target Exam / Class
     <select id="subject-selector" class="menu-select">
       <option value="General" selected>Select Your Goal...</option>
+
       <optgroup label="My Custom Subjects" id="custom-subjects-group"></optgroup>
       
+      <optgroup label="Large Subjects (Uploaded Files)" id="large-subjects-group"></optgroup>
+
       <optgroup label="School (Classes 8-10)">
         <option>Class 8</option>
         <option>Class 9</option>
         <option>Class 10</option>
       </optgroup>
-      
+
       <optgroup label="Higher Secondary (11-12)">
         <option>Class 11 Science</option>
         <option>Class 11 Commerce</option>
@@ -35,14 +46,17 @@
         <option>Class 12 Commerce</option>
         <option>Class 12 Arts/Humanities</option>
       </optgroup>
-      
+
       <optgroup label="College & Professional">
         <option>College / University Student</option>
+        <option>B.Com</option>
+        <option>B.Tech</option>
+        <option>B.A</option>
         <option>CA (Chartered Accountant)</option>
         <option>CMA</option>
         <option>CS (Company Secretary)</option>
       </optgroup>
-      
+
       <optgroup label="Competitive Exams">
         <option>CUET</option>
         <option>JEE Mains</option>
@@ -51,16 +65,16 @@
         <option>UPSC / CSE</option>
         <option>SSC / Banking</option>
       </optgroup>
-      
+
       <option>Other Courses</option>
     </select>
   </label>
 
   <label class="menu-label">Language
     <select id="language-selector" class="menu-select">
-        <option>English</option>
-        <option>Hinglish</option>
-        <option>Hindi</option>
+      <option>English</option>
+      <option>Hinglish</option>
+      <option>Hindi</option>
     </select>
   </label>
 
@@ -73,9 +87,26 @@
       <option value="teacher">👨‍🏫 Strict Teacher</option>
     </select>
   </label>
-  
+
   <div style="margin-top:20px; display:flex; gap:10px;">
-      <button id="login-btn" style="background:#10b981; color:black;">🔐 Login</button>
-      <button id="logout-btn" class="hidden" style="background:#ef4444; color:white;">🚪 Logout</button>
+    <button id="login-btn" style="background:#10b981; color:black;">🔐 Login</button>
+    <button id="logout-btn" class="hidden" style="background:#ef4444; color:white;">🚪 Logout</button>
   </div>
+
 </section>
+
+<div id="large-subject-modal" class="global-modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-content">
+    <h3 style="margin-top:0;">Add Large Subject</h3>
+
+    <input id="large-sub-name" placeholder="Subject Name">
+    <input type="file" id="large-sub-file" style="margin-top:10px;">
+
+    <div id="large-sub-status" style="font-size:12px; color:#d946ef; margin:5px 0;"></div>
+
+    <div style="display:flex; gap:10px; margin-top:15px;">
+      <button id="save-large-subject-btn" class="primary">Save & Remember</button>
+      <button id="close-large-modal-btn" style="background:#ef4444;">Cancel</button>
+    </div>
+  </div>
+</div>

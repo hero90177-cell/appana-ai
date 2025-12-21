@@ -1,228 +1,82 @@
-/* Chat Specific Styles */
-.chat-header { 
-  padding: 10px 16px; 
-  border-bottom: 1px solid rgba(255,255,255,0.06); 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  /* UPDATED: Use variable instead of hardcoded hex */
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  z-index: 10;
+/* CHAT HEADER */
+.chat-header {
   height: 55px;
-  flex-shrink: 0; 
-  color: var(--text-main);
-}
-
-/* Header actions */
-.header-actions { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-}
-
-/* RED TIMER STYLE */
-.timer-display {
-  display: flex; 
-  align-items: center; 
-  gap: 6px;
-  background: rgba(239, 68, 68, 0.12); 
-  border: 1px solid rgba(239, 68, 68, 0.45); 
-  padding: 4px 10px;
-  border-radius: 10px;
-  color: #ef4444; /* Keep danger color independent */
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: bold;
-  font-size: 13px;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.25);
-  animation: pulseRed 2s infinite;
-}
-
-@keyframes pulseRed { 
-  0% { opacity: 0.85; } 
-  50% { opacity: 1; text-shadow: 0 0 10px #ef4444; } 
-  100% { opacity: 0.85; } 
-}
-
-/* Status Group */
-.status-group {
-  display: flex; 
-  align-items: center; 
-  gap: 12px;
-  background: rgba(255,255,255,0.04);
-  padding: 5px 10px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(6px);
-}
-
-.status-item { 
-  display: flex; 
-  align-items: center; 
-  gap: 5px; 
-  font-size: 9px; 
-  font-weight: bold; 
-  color: var(--text-muted); 
-  text-transform: uppercase; 
-}
-
-.status-dot { 
-  width: 6px; 
-  height: 6px; 
-  border-radius: 50%; 
-  background: var(--text-muted); 
-  transition: 0.3s; 
-}
-
-.status-dot.active { 
-  background: #10b981; 
-  box-shadow: 0 0 8px #10b981; 
-}
-
-/* Motivation Strip */
-#sticky-motivation {
-  position: absolute; 
-  top: 55px; 
-  left: 0; 
-  width: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--nano-cyan),
-    var(--nano-violet)
-  );
-  color: var(--text-muted);
-  text-align: center; 
-  padding: 4px; 
-  font-size: 10px;
-  z-index: 9; 
-  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--glass-bg);
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Selection Toolbar */
-#selection-toolbar {
-  position: absolute; 
-  top: 55px; 
-  left: 0; 
-  width: 100%;
-  background: linear-gradient(
-    135deg,
-    var(--accent),
-    #0ea5e9
-  );
-  padding: 8px;
-  display: flex; 
-  justify-content: space-between; 
+/* STATUS (AI + NET) */
+.status-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-item {
+  display: flex;
   align-items: center;
-  z-index: 50;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--text-muted);
 }
 
-/* Message Area */
-.chat-box { 
-  flex: 1; 
-  overflow-y: auto; 
-  padding: 50px 12px 12px 12px; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 18px;
-  scroll-behavior: smooth;
-  /* Remove opaque background so global gradient shows through slightly if desired */
-  background: transparent;
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
 }
 
-/* Select Mode Logic */
-.chat-box.select-mode-active .message { 
-  cursor: pointer; 
-  border: 1px dashed rgba(255,255,255,0.3); 
-  transition: 0.2s;
-  pointer-events: all !important;
+.status-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
 }
 
-.chat-box.select-mode-active .message:hover {
-  background: rgba(255,255,255,0.05);
-}
-
-.chat-box.select-mode-active .message.selected { 
-  border: 2px solid var(--accent); 
-  background: var(--nano-cyan) !important; 
-  box-shadow: 0 0 18px var(--accent-glow);
-}
-
-/* General Message */
-.message { 
-  width: fit-content;
-  padding: 6px 12px; 
-  border-radius: 12px; 
-  line-height: 1.55; 
-  position: relative; 
-  word-wrap: break-word;
+/* CHAT AREA */
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 60px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* AI MESSAGE */
-.ai-message { 
-  align-self: flex-start; 
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  /* UPDATED: Use variable */
-  color: var(--text-main);
-  font-size: 16px; 
-  padding-left: 0;
+.ai-message {
   max-width: 95%;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-main);
 }
 
 /* USER MESSAGE */
-.user-message { 
-  align-self: flex-end; 
-  background: linear-gradient(135deg, var(--accent), #0891b2);
-  color: #000; /* Contrast against bright accent */
-  font-weight: 500;
-  border-bottom-right-radius: 3px; 
-  box-shadow: 0 4px 14px var(--accent-glow);
+.user-message {
+  align-self: flex-end;
+  max-width: 65%;
   font-size: 13.5px;
-  max-width: 65%; 
-  margin-left: auto;
+  background: linear-gradient(135deg, var(--accent), #0891b2);
+  color: #000;
+  padding: 8px 12px;
+  border-radius: 14px 14px 4px 14px;
 }
 
-/* Composer */
-.composer-area { 
-  padding: 8px 12px; 
-  /* UPDATED: Use glass background */
+/* COMPOSER */
+.composer-area {
   background: var(--glass-bg);
-  border-top: 1px solid rgba(255,255,255,0.06); 
-  flex-shrink: 0; 
-  z-index: 20;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 8px;
 }
 
-.composer { 
-  display: flex; 
-  gap: 8px; 
-  align-items: flex-end; 
+.composer textarea {
+  height: 36px;
+  transition: 0.3s;
 }
 
-.composer textarea { 
-  border-radius: 20px; 
-  height: 38px;
-  min-height: 38px;
-  transition: all 0.3s ease;
-  background: var(--input-bg);
-  color: var(--text-main);
-}
-
-.composer textarea:focus { 
-  border-color: var(--accent); 
-  box-shadow: 0 0 0 2px var(--accent-glow); 
-  height: 80px; 
-}
-
-#file-preview { 
-  margin-bottom: 6px; 
-  font-size: 11px; 
-  color: var(--text-muted); 
-  background: rgba(255,255,255,0.04); 
-  padding: 6px; 
-  border-radius: 6px; 
-  display: flex; 
-  justify-content: space-between; 
-  border: 1px solid rgba(255,255,255,0.1); 
+.composer textarea:focus {
+  height: 120px;
 }

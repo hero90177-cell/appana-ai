@@ -12,16 +12,14 @@ export async function loadComponents() {
             const response = await fetch(comp.html);
             if (!response.ok) throw new Error(`Failed to load ${comp.html}`);
             const text = await response.text();
-            
+
             const container = document.getElementById(comp.id);
-            if (container) {
-                container.innerHTML = text;
-            }
+            if (container) container.innerHTML = text;
         } catch (err) {
             console.error(err);
         }
 
-        // 2. Load CSS dynamically
+        // 2. Load CSS dynamically (if not already loaded)
         if (!document.querySelector(`link[href="${comp.css}"]`)) {
             const link = document.createElement("link");
             link.rel = "stylesheet";
@@ -30,7 +28,6 @@ export async function loadComponents() {
         }
     });
 
-    // Wait for all HTML/CSS to be injected
     await Promise.all(promises);
     console.log("✅ All UI Components Loaded Successfully");
 }
