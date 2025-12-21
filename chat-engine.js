@@ -2,7 +2,7 @@
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
-import { deleteMessagesFromCloud } from './auth-manager.js';
+// ❌ REMOVED: import { deleteMessagesFromCloud } ... (This caused the crash)
 
 const el = id => document.getElementById(id);
 const API_URL = "/api/ai-chat";
@@ -12,24 +12,28 @@ export function setupChat() {
     loadChatHistory();
 
     // Send message button
-    el("send-btn").onclick = handleSend;
+    const sendBtn = el("send-btn");
+    if (sendBtn) sendBtn.onclick = handleSend;
 
     // Handle Enter key in textarea
     const input = el("user-input");
-    input.addEventListener("keydown", e => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    });
+    if (input) {
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+    }
 }
 
 /* ---------------------- LOAD HISTORY ---------------------- */
 function loadChatHistory() {
     if (!STATE.chatHistory?.length) return;
     const chatBox = el("chat-box");
+    if (!chatBox) return;
+    
     chatBox.innerHTML = "";
-
     STATE.chatHistory.forEach(msg =>
         appendMsg(msg.who, msg.text, msg.cls, msg.id, false)
     );
@@ -64,6 +68,9 @@ async function handleSend() {
         if (sub.startsWith("custom_")) {
             const s = STATE.customSubjects?.find(x => x.id === sub.split("_")[1]);
             if (s) context = `\nExplain simply in Indian English.\nTopic info:\n${s.content}`;
+        } else if (sub.startsWith("large_")) {
+             // Handled by UI manager context injection usually, but we keep this safe
+             context = `\nUse the large subject file context if available.`;
         } else {
             context = `\nUse syllabus context: ${sub}`;
         }
@@ -100,15 +107,18 @@ async function handleSend() {
             );
         }
 
-    } catch {
+    } catch (err) {
+        console.error(err);
         const aiEl = el(aiId);
-        if (aiEl) aiEl.innerText = "Offline. Try again later.";
+        if (aiEl) aiEl.innerText = "Offline. Please check internet.";
     }
 }
 
 /* ---------------------- APPEND MESSAGE ---------------------- */
 export function appendMsg(who, txt, cls, id, save = true) {
     const chatBox = el("chat-box");
+    if (!chatBox) return;
+
     const d = document.createElement("div");
     d.className = `message ${cls}`;
     d.id = id;

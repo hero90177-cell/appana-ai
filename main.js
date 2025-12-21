@@ -16,8 +16,7 @@ async function initApp() {
         /* 2️⃣ Load local storage */
         loadLocalData();
 
-        /* 3️⃣ Setup UI (menus, buttons, tools) */
-        // We wrap this in a try-catch so one UI error doesn't kill the whole app
+        /* 3️⃣ Setup UI */
         try {
             setupUI();
         } catch (uiErr) {
@@ -28,7 +27,6 @@ async function initApp() {
         setupChat();
 
         /* 5️⃣ Setup auth (Firebase) */
-        // This initiates the listener, doesn't need await
         setupAuthListener();
 
         /* 6️⃣ HEALTH CHECK */
@@ -38,19 +36,29 @@ async function initApp() {
             }
         }, 1500);
 
-        /* 7️⃣ Default theme */
+        /* 7️⃣ Default theme & VISIBILITY FORCE */
         document.body.classList.add("study-mode");
+        
+        // Ensure Chat is visible on Mobile
+        const chatPanel = document.getElementById("section-chat");
+        if(chatPanel && window.innerWidth < 900) {
+            chatPanel.classList.add("active-panel");
+        }
 
         /* 8️⃣ REMOVE LOADING SCREEN */
         const loader = document.getElementById("app-loader");
         if (loader) {
             loader.style.opacity = "0";
-            setTimeout(() => loader.remove(), 500); // Smooth fade out
+            setTimeout(() => loader.remove(), 500); 
         }
 
     } catch (criticalError) {
         console.error("🔥 Critical Init Error:", criticalError);
-        alert("Appana AI failed to load resources. Please reload.");
+        // Fallback: Remove loader anyway so user sees whatever is there
+        const loader = document.getElementById("app-loader");
+        if (loader) {
+            loader.innerHTML = `<div style="color:red; text-align:center;">Error Loading App.<br>Please Clear Cache.<br>${criticalError.message}</div>`;
+        }
     }
 
     /* 9️⃣ PWA INSTALL SUPPORT */
@@ -60,5 +68,5 @@ async function initApp() {
     });
 }
 
-// EXECUTE IMMEDIATELY (Do not wait for DOMContentLoaded inside a module)
+// EXECUTE IMMEDIATELY
 initApp();
