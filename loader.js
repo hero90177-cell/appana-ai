@@ -7,19 +7,27 @@ export async function loadComponents() {
     ];
 
     const promises = components.map(async (comp) => {
-        // 1. Fetch HTML Content (Added timestamp to bypass cache)
         try {
-            const response = await fetch(`${comp.html}?v=${Date.now()}`);
-            if (!response.ok) throw new Error(`Failed to load ${comp.html}`);
+            // ❌ Removed ?v= timestamp to allow Service Worker cache to work
+            const response = await fetch(comp.html);
+            
+            if (!response.ok) throw new Error(`Missing ${comp.html}`);
             const text = await response.text();
 
             const container = document.getElementById(comp.id);
-            if (container) container.innerHTML = text;
+            if (container) {
+                container.innerHTML = text;
+            }
         } catch (err) {
-            console.error(err);
+            console.error(`Load Error (${comp.id}):`, err);
+            // Fallback: If loading fails, show error in the box so it's not black
+            const container = document.getElementById(comp.id);
+            if (container) {
+                container.innerHTML = `<div style="padding:20px; color:#ef4444;">⚠️ Failed to load ${comp.html}</div>`;
+            }
         }
 
-        // 2. Load CSS dynamically (if not already loaded)
+        // Load CSS
         if (!document.querySelector(`link[href="${comp.css}"]`)) {
             const link = document.createElement("link");
             link.rel = "stylesheet";
@@ -29,5 +37,5 @@ export async function loadComponents() {
     });
 
     await Promise.all(promises);
-    console.log("✅ All UI Components Loaded Successfully");
+    console.log("✅ Components Loaded");
 }

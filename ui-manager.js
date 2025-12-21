@@ -1,4 +1,4 @@
-// ui-manager.js (v3.3 Final - Stable & Persistent)
+// ui-manager.js (v4.0 Crash-Proof)
 
 export const STATE = {
     xp: 0,
@@ -7,7 +7,7 @@ export const STATE = {
     selectMode: false,
     selectedIds: new Set(),
     chatHistory: [],
-    largeSubjects: [] // IndexedDB
+    largeSubjects: []
 };
 
 const el = id => document.getElementById(id);
@@ -23,8 +23,7 @@ export const timer = {
     startTimer(seconds) { timer.stop(); timerMode="timer"; timerSeconds=seconds; paused=false; timer.run(); },
     run() {
         if(timerInterval) clearInterval(timerInterval);
-        const box=el("magic-timer"); if(!box) return;
-        box.classList.remove("hidden");
+        const box=el("magic-timer"); if(box) box.classList.remove("hidden");
         timerInterval=setInterval(()=>{
             if(paused) return;
             timerSeconds = timerMode==="stopwatch" ? timerSeconds+1 : timerSeconds-1;
@@ -40,66 +39,77 @@ export const timer = {
     update(){ const m=String(Math.floor(timerSeconds/60)).padStart(2,"0"); const s=String(timerSeconds%60).padStart(2,"0"); el("timer-val")&&(el("timer-val").innerText=`${m}:${s}`); }
 };
 
-/* ---------------- UI INIT ---------------- */
+/* ---------------- UI INIT (FIXED) ---------------- */
 export function setupUI() {
-    // 1. Navigation Logic
-    document.querySelectorAll(".nav-btn").forEach(btn=>{
-        btn.onclick=()=>{
-            document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
-            btn.classList.add("active");
-            document.querySelectorAll(".panel, .main-area, .sidebar, .right-panel").forEach(p=>p.classList.remove("active-panel"));
-            el(btn.dataset.target)?.classList.add("active-panel");
-        };
-    });
+    console.log("🛠️ Setting up UI Managers...");
 
-    // 2. Custom Subject Modal
-    el("add-subject-btn")?.onclick=()=>el("custom-subject-modal").classList.remove("hidden");
-    el("close-modal-btn")?.onclick=()=>el("custom-subject-modal").classList.add("hidden");
-    el("save-subject-btn")?.onclick=saveCustomSubject;
+    // 1. Navigation Logic (Safe)
+    const navBtns = document.querySelectorAll(".nav-btn");
+    if(navBtns.length > 0) {
+        navBtns.forEach(btn=>{
+            btn.onclick=()=>{
+                document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+                btn.classList.add("active");
+                document.querySelectorAll(".panel, .main-area, .sidebar, .right-panel").forEach(p=>p.classList.remove("active-panel"));
+                const target = el(btn.dataset.target);
+                if(target) target.classList.add("active-panel");
+            };
+        });
+    }
 
-    // 3. Chapter & Select Mode
-    el("mark-chapter-btn")?.onclick=addChapter;
-    el("select-mode-btn")?.onclick=toggleSelectMode;
-    el("cancel-select-btn")?.onclick=toggleSelectMode;
+    // 2. Event Listeners (Wrapped in Safety Checks)
+    // If these elements aren't loaded yet, we skip them instead of crashing
+    const click = (id, fn) => { const element = el(id); if(element) element.onclick = fn; };
 
-    // 4. Large Subject Modal (Handlers)
-    el("add-large-subject-btn")?.onclick=()=>el("large-subject-modal").classList.remove("hidden");
-    el("save-large-subject-btn")?.onclick=saveLargeSubject;
-    el("close-large-modal-btn")?.onclick=()=>el("large-subject-modal").classList.add("hidden"); // ✅ Added JS Handler
+    click("add-subject-btn", () => el("custom-subject-modal")?.classList.remove("hidden"));
+    click("close-modal-btn", () => el("custom-subject-modal")?.classList.add("hidden"));
+    click("save-subject-btn", saveCustomSubject);
 
-    // 5. Tools Panel - AI Connected
-    el("gen-notes-btn")?.onclick=()=>sendToolRequest("Generate notes");
-    el("gen-mcq-btn")?.onclick=()=>sendToolRequest("Generate MCQs");
-    el("gen-imp-btn")?.onclick=()=>sendToolRequest("Generate important points");
-    el("gen-passage-btn")?.onclick=()=>sendToolRequest("Generate passage");
+    click("mark-chapter-btn", addChapter);
+    click("select-mode-btn", toggleSelectMode);
+    click("cancel-select-btn", toggleSelectMode);
 
-    el("pdf-btn")?.onclick=exportChatPDF;
-    el("clear-db-btn")?.onclick=clearAllData;
+    click("add-large-subject-btn", () => el("large-subject-modal")?.classList.remove("hidden"));
+    click("save-large-subject-btn", saveLargeSubject);
+    click("close-large-modal-btn", () => el("large-subject-modal")?.classList.add("hidden"));
 
-    // 6. Target Exam Persistence Listener
-    el("subject-selector")?.addEventListener("change", (e) => {
-        localStorage.setItem("appana_target_exam", e.target.value);
-    });
+    // Tools
+    click("gen-notes-btn", () => sendToolRequest("Generate notes"));
+    click("gen-mcq-btn", () => sendToolRequest("Generate MCQs"));
+    click("gen-imp-btn", () => sendToolRequest("Generate important points"));
+    click("gen-passage-btn", () => sendToolRequest("Generate passage"));
 
-    // 7. Load Data
-    initIndexedDB().then(loadLargeSubjects);
-    loadLocalData();
+    click("pdf-btn", exportChatPDF);
+    click("clear-db-btn", clearAllData);
+
+    // 3. Inputs
+    const subSel = el("subject-selector");
+    if(subSel) {
+        subSel.addEventListener("change", (e) => localStorage.setItem("appana_target_exam", e.target.value));
+    }
+
+    // 4. Data Load
+    try {
+        initIndexedDB().then(loadLargeSubjects);
+        loadLocalData();
+    } catch(err) { console.log("Data load warning:", err); }
 }
 
 /* ---------------- LOCAL STORAGE ---------------- */
 export function loadLocalData() {
     const raw=localStorage.getItem("appana_v3"); 
     if(raw) {
-        const data=JSON.parse(raw);
-        STATE.xp=data.xp||0;
-        STATE.customSubjects=data.customSubjects||[];
-        STATE.chapters=data.chapters||[];
-        STATE.chatHistory=data.chatHistory||[];
-        renderCustomSubjects();
-        renderChapters();
+        try {
+            const data=JSON.parse(raw);
+            STATE.xp=data.xp||0;
+            STATE.customSubjects=data.customSubjects||[];
+            STATE.chapters=data.chapters||[];
+            STATE.chatHistory=data.chatHistory||[];
+            renderCustomSubjects();
+            renderChapters();
+        } catch(e) { console.error("Save file corrupted"); }
     }
 
-    // ✅ RESTORE SAVED TARGET EXAM
     const savedTarget = localStorage.getItem("appana_target_exam");
     if (savedTarget && el("subject-selector")) {
         el("subject-selector").value = savedTarget;
@@ -117,14 +127,14 @@ export function saveData(){
 
 /* ---------------- CUSTOM SUBJECTS ---------------- */
 function saveCustomSubject(){
-    const name=el("custom-sub-name").value.trim();
-    const content=el("custom-sub-text").value.trim();
+    const name=el("custom-sub-name")?.value.trim();
+    const content=el("custom-sub-text")?.value.trim();
     if(!name) return alert("Subject name required");
 
     STATE.customSubjects.push({ id:crypto.randomUUID(), name, content });
     saveData();
     renderCustomSubjects();
-    el("custom-subject-modal").classList.add("hidden");
+    el("custom-subject-modal")?.classList.add("hidden");
 }
 
 function renderCustomSubjects(){
@@ -141,42 +151,38 @@ function renderCustomSubjects(){
 /* ---------------- LARGE SUBJECTS (IndexedDB) ---------------- */
 let db=null;
 async function initIndexedDB(){
+    if (!window.indexedDB) return;
     return new Promise((resolve,reject)=>{
         const request=indexedDB.open("appana_large_subjects",1);
         request.onupgradeneeded=e=>{
             db=e.target.result;
-            db.createObjectStore("subjects",{keyPath:"id"});
+            if(!db.objectStoreNames.contains("subjects")) {
+                db.createObjectStore("subjects",{keyPath:"id"});
+            }
         };
         request.onsuccess=e=>{ db=e.target.result; resolve(db); };
-        request.onerror=e=>reject(e);
+        request.onerror=e=>resolve(null); // Don't crash on DB error
     });
 }
 
 async function saveLargeSubject(){
-    const name=el("large-sub-name").value.trim();
+    const name=el("large-sub-name")?.value.trim();
     const fileInput=el("large-sub-file");
-    if(!name || !fileInput.files.length) return alert("Name & file required");
+    if(!name || !fileInput?.files.length) return alert("Name & file required");
 
     const file=fileInput.files[0];
     const reader=new FileReader();
     reader.onload = function(e) {
+        if(!db) return alert("Database not ready");
         const dataURL = e.target.result;
         const obj = { id: crypto.randomUUID(), name, content: dataURL };
-
-        // ✅ FIXED: Standard IndexedDB Transaction Logic
         const tx = db.transaction("subjects", "readwrite");
-        const store = tx.objectStore("subjects");
-        store.add(obj);
-
+        tx.objectStore("subjects").add(obj);
         tx.oncomplete = () => {
             STATE.largeSubjects.push(obj);
             renderLargeSubjects();
-            el("large-subject-modal").classList.add("hidden");
-            el("large-sub-name").value = "";
-            el("large-sub-file").value = "";
+            el("large-subject-modal")?.classList.add("hidden");
         };
-
-        tx.onerror = () => alert("Error saving large file to database.");
     };
     reader.readAsDataURL(file);
 }
@@ -184,22 +190,11 @@ async function saveLargeSubject(){
 async function loadLargeSubjects(){
     if(!db) return;
     const tx=db.transaction("subjects","readonly");
-    const store=tx.objectStore("subjects");
-    
-    return new Promise((resolve) => {
-        const req = store.getAll();
-        req.onsuccess = () => {
-            STATE.largeSubjects = req.result || [];
-            renderLargeSubjects();
-            
-            // Re-apply target selection in case it was a large file
-            const savedTarget = localStorage.getItem("appana_target_exam");
-            if(savedTarget && savedTarget.startsWith("large_")) {
-                 el("subject-selector").value = savedTarget;
-            }
-            resolve();
-        };
-    });
+    const req = tx.objectStore("subjects").getAll();
+    req.onsuccess = () => {
+        STATE.largeSubjects = req.result || [];
+        renderLargeSubjects();
+    };
 }
 
 function renderLargeSubjects(){
@@ -215,12 +210,13 @@ function renderLargeSubjects(){
 
 /* ---------------- CHAPTERS ---------------- */
 function addChapter(){
-    const v=el("chapter-name").value.trim();
+    const input = el("chapter-name");
+    const v = input?.value.trim();
     if(!v) return;
     STATE.chapters.push({ name:v, done:false });
     saveData();
     renderChapters();
-    el("chapter-name").value="";
+    input.value="";
 }
 
 function renderChapters(){
@@ -254,14 +250,13 @@ function sendToolRequest(command) {
     const topic = topicInput?.value.trim() || "";
     const fullMessage = topic ? `${command} for ${topic}` : command;
 
+    // Switch to chat panel
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".panel, .main-area, .sidebar, .right-panel").forEach(p => p.classList.remove("active-panel"));
-
-    const chatPanel = el("section-chat");
-    if (chatPanel) chatPanel.classList.add("active-panel");
-
-    const chatNavBtn = document.querySelector(`.nav-btn[data-target="section-chat"]`);
-    if (chatNavBtn) chatNavBtn.classList.add("active");
+    
+    el("section-chat")?.classList.add("active-panel");
+    const chatBtn = document.querySelector(`.nav-btn[data-target="section-chat"]`);
+    if(chatBtn) chatBtn.classList.add("active");
 
     const inputBox = el("user-input");
     const sendBtn = el("send-btn");
@@ -272,7 +267,9 @@ function sendToolRequest(command) {
 }
 
 function exportChatPDF(){
-    import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(jsPDF=>{
+    // Dynamic import to prevent crash if library missing
+    import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+    .then(jsPDF=>{
         const doc=new jsPDF.jsPDF();
         let y=10;
         STATE.chatHistory.forEach(m=>{
@@ -283,22 +280,16 @@ function exportChatPDF(){
             if (y > 280) { doc.addPage(); y = 10; }
         });
         doc.save("Appana_Chat.pdf");
-    });
+    })
+    .catch(e => alert("PDF Library loading... try again in 5 seconds."));
 }
 
 function clearAllData(){
-    if(!confirm("⚠ Are you sure? This will delete all history, subjects, and XP.")) return;
+    if(!confirm("⚠ Are you sure? This will delete all history.")) return;
     localStorage.clear();
     if(db){
         const tx=db.transaction("subjects","readwrite");
         tx.objectStore("subjects").clear();
     }
-    STATE.customSubjects=[];
-    STATE.chapters=[];
-    STATE.chatHistory=[];
-    STATE.largeSubjects=[];
-    renderCustomSubjects();
-    renderChapters();
-    renderLargeSubjects();
     window.location.reload();
 }

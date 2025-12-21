@@ -4,121 +4,66 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0a0b14">
-  <meta name="color-scheme" content="dark light">
-
-  <title>Appana AI — Study Mentor</title>
-  <meta name="description" content="Appana AI is a smart study mentor for Class 11 Commerce students.">
-
+  <title>Appana AI</title>
   <link rel="stylesheet" href="global.css">
   <link rel="stylesheet" href="menu.css">
   <link rel="stylesheet" href="chat.css">
   <link rel="stylesheet" href="tools.css">
-
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-
+  
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-
-  <script>
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    if (pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
-  </script>
-
-  <style>
-    /* Safe Loading Screen to prevent Black Void */
-    #app-loader {
-      position: fixed; inset: 0; background: #000; z-index: 9999;
-      display: flex; justify-content: center; align-items: center; color: white;
-      font-family: sans-serif; flex-direction: column; gap: 10px;
-    }
-    .spinner {
-      width: 40px; height: 40px; border: 4px solid #333; border-top-color: #06b6d4;
-      border-radius: 50%; animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
 </head>
 
 <body class="study-mode">
-
-  <div id="app-loader">
-    <div class="spinner"></div>
-    <div id="loader-text">Igniting Appana AI...</div>
-  </div>
 
   <div id="app" class="app-container">
 
     <aside id="section-menu" class="sidebar" aria-label="Main menu"></aside>
 
-    <main id="section-chat" class="main-area active-panel" aria-live="polite"></main>
+    <main id="section-chat" class="main-area active-panel" aria-live="polite">
+       <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#64748b;">
+           <div style="font-size:40px;">🦅</div>
+           <h2>Appana AI</h2>
+           <p>Loading Interface...</p>
+       </div>
+    </main>
 
     <aside id="section-tools" class="right-panel" aria-label="Study tools"></aside>
 
-    <nav id="mobile-nav" class="mobile-nav mobile-only" aria-label="Mobile navigation">
-      <button class="nav-btn" data-target="section-menu">
-        <span>☰</span><small>Menu</small>
-      </button>
-
-      <button class="nav-btn active" data-target="section-chat">
-        <span>💬</span><small>Chat</small>
-      </button>
-
-      <button class="nav-btn" data-target="section-tools">
-        <span>⚡</span><small>Tools</small>
-      </button>
+    <nav id="mobile-nav" class="mobile-nav mobile-only">
+      <button class="nav-btn" data-target="section-menu"><span>☰</span><small>Menu</small></button>
+      <button class="nav-btn active" data-target="section-chat"><span>💬</span><small>Chat</small></button>
+      <button class="nav-btn" data-target="section-tools"><span>⚡</span><small>Tools</small></button>
     </nav>
 
   </div>
 
-  <div id="custom-subject-modal" class="global-modal hidden" role="dialog" aria-modal="true">
+  <div id="custom-subject-modal" class="global-modal hidden">
     <div class="modal-content">
-      <h3 style="margin-top:0;">Add Custom Subject</h3>
+      <h3>Add Custom Subject</h3>
       <input id="custom-sub-name" placeholder="Subject Name">
-      <input type="file" id="custom-sub-file" style="margin-top:10px;">
-      <div id="custom-sub-status" style="font-size:12px; color:#d946ef; margin:5px 0;"></div>
-      <textarea id="custom-sub-text" placeholder="Paste content here..." style="height:100px; margin-top:5px;"></textarea>
+      <textarea id="custom-sub-text" placeholder="Content..."></textarea>
       <div style="display:flex; gap:10px; margin-top:15px;">
-        <button id="save-subject-btn" class="primary">Save & Remember</button>
+        <button id="save-subject-btn" class="primary">Save</button>
         <button id="close-modal-btn" style="background:#ef4444;">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div id="large-subject-modal" class="global-modal hidden" role="dialog" aria-modal="true">
+  <div id="large-subject-modal" class="global-modal hidden">
     <div class="modal-content">
-      <h3 style="margin-top:0;">Add Large Subject</h3>
+      <h3>Add Large Subject</h3>
       <input id="large-sub-name" placeholder="Subject Name">
       <input type="file" id="large-sub-file" style="margin-top:10px;">
-      <div id="large-sub-status" style="font-size:12px; color:#d946ef; margin:5px 0;"></div>
       <div style="display:flex; gap:10px; margin-top:15px;">
-        <button id="save-large-subject-btn" class="primary">Save & Remember</button>
-        <button id="close-large-modal-btn" style="background:#ef4444;" onclick="document.getElementById('large-subject-modal').classList.add('hidden');">Cancel</button>
+        <button id="save-large-subject-btn" class="primary">Save</button>
+        <button id="close-large-modal-btn" style="background:#ef4444;">Cancel</button>
       </div>
     </div>
   </div>
 
   <script type="module" src="main.js"></script>
-
-  <script>
-    // Fallback if main.js crashes completely
-    setTimeout(() => {
-        const loader = document.getElementById("app-loader");
-        if(loader && loader.style.display !== "none") {
-             document.getElementById("loader-text").innerText = "Taking longer than usual...";
-             // Force remove after 8 seconds so user can at least see UI
-             setTimeout(() => loader.style.display = "none", 8000);
-        }
-    }, 5000);
-  </script>
 </body>
 </html>
