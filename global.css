@@ -155,3 +155,28 @@ textarea {
   .nav-btn span { font-size: 22px; margin-bottom: 2px; }
   .nav-btn.active { color: var(--accent); }
 }
+
+/* ===============================
+   FIXES FOR BLACK SCREEN
+   =============================== */
+
+/* Ensure the loader is always on top */
+#app-loader {
+    z-index: 10000;
+}
+
+/* Force the app container to take space */
+.app-container {
+    min-height: 100dvh;
+    width: 100%;
+}
+
+/* Ensure active panel is actually visible */
+@media (max-width: 900px) {
+    .active-panel {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        background: var(--glass-bg); /* Ensure background is painted */
+    }
+}
