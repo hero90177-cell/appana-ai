@@ -1,15 +1,13 @@
 <header class="chat-header">
-
   <div class="chat-title">
-    <span style="font-size:20px;">💬</span>
+    <span style="font-size:24px;">🦅</span>
     <div>
-      <h2 id="chat-title-text">Study Chat</h2>
-      <small>Encrypted 🔒</small>
+      <h2 id="chat-title-text">Appana AI</h2>
+      <small>Encrypted & Secure</small>
     </div>
   </div>
 
-  <div class="header-actions">
-
+  <div class="header-actions" style="display:flex; gap:10px; align-items:center;">
     <div id="magic-timer" class="timer-display hidden">
       <span>⏱</span><span id="timer-val">00:00</span>
     </div>
@@ -19,17 +17,16 @@
       <div class="status-item"><span id="api-status" class="status-dot"></span> AI</div>
     </div>
 
-    <button id="select-mode-btn" class="icon-btn">✓</button>
+    <button id="select-mode-btn" class="icon-btn" style="width:32px; height:32px; font-size:14px;">✓</button>
   </div>
-
 </header>
 
-<div id="sticky-motivation">"Loading daily motivation..."</div>
+<div id="sticky-motivation">✨ Loading inspiration...</div>
 
 <div id="selection-toolbar" class="hidden">
   <span id="selection-count">0 Selected</span>
-  <div>
-    <button id="confirm-delete-btn">Delete</button>
+  <div style="display:flex; gap:10px;">
+    <button id="confirm-delete-btn">🗑 Delete</button>
     <button id="cancel-select-btn">Cancel</button>
   </div>
 </div>
@@ -37,16 +34,15 @@
 <div id="chat-box" class="chat-box">
   <div class="message ai-message" id="welcome-msg">
     <strong>🦅 Appana AI:</strong>
-    <p>Hello! I am ready. Add a custom subject or start chatting.</p>
+    <p>Namaste! I am ready. Select a subject or ask me anything.</p>
   </div>
 </div>
 
 <div class="composer-area">
-
   <div id="file-preview" class="hidden">
-    <span id="file-name">File</span>
-    <span id="ocr-status">Processing...</span>
-    <button id="remove-file">✕</button>
+    <span id="file-name">File.pdf</span>
+    <span id="ocr-status" style="color:#fbbf24; font-size:10px;">Processing...</span>
+    <button id="remove-file" style="background:none; border:none; color:white;">✕</button>
   </div>
 
   <form class="composer" onsubmit="return false;">
@@ -55,11 +51,8 @@
 
     <button id="voice-btn" class="icon-btn">🎤</button>
 
-    <textarea id="user-input"
-              placeholder="Type your doubt here..."
-              rows="1"></textarea>
+    <textarea id="user-input" placeholder="Message..." rows="1"></textarea>
 
     <button id="send-btn" class="icon-btn primary">➤</button>
   </form>
-
 </div>
