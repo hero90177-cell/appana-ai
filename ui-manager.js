@@ -1,12 +1,13 @@
 // ui-manager.js
 
-// ✅ FIX: Use 'const' and modify properties so imports don't break
+// ✅ FIX: Added chatHistory to STATE for persistence
 export const STATE = { 
   xp: 0, 
   customSubjects: [], 
   chapters: [],
   selectMode: false, 
-  selectedIds: new Set() 
+  selectedIds: new Set(),
+  chatHistory: [] // New: Stores messages locally
 };
 
 const el = id => document.getElementById(id);
@@ -35,7 +36,7 @@ export const timer = {
 
     run: () => {
         el("magic-timer").classList.remove("hidden");
-        el("timer-icon").innerText = timerMode === 'timer' ? '⏳' : '⏱'; // Icon change
+        el("timer-icon").innerText = timerMode === 'timer' ? '⏳' : '⏱'; 
         
         timerInterval = setInterval(() => {
             if (timerMode === 'stopwatch') {
@@ -65,7 +66,6 @@ export const timer = {
     },
 
     reset: () => {
-        // Resets based on last mode, defaulting to 0 for stopwatch
         timerSeconds = 0; 
         timer.updateDisplay();
     },
@@ -74,8 +74,6 @@ export const timer = {
         const h = Math.floor(timerSeconds / 3600);
         const m = Math.floor((timerSeconds % 3600) / 60).toString().padStart(2, '0');
         const s = (timerSeconds % 60).toString().padStart(2, '0');
-        
-        // Show HH:MM:SS if > 1 hour, else MM:SS
         el("timer-val").innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
     }
 };
@@ -101,8 +99,9 @@ export function setupUI() {
 
     // --- MOTIVATION ---
     const quotes = ["Dream Big.", "Work Hard.", "Stay Focused.", "No Excuses.", "You Got This.", "Believe.", "Hustle."];
-    el('sidebar-motivation-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
-    el('sticky-motivation').innerText = `💡 "${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+    const q = quotes[Math.floor(Math.random() * quotes.length)];
+    if(el('sidebar-motivation-text')) el('sidebar-motivation-text').innerText = q;
+    if(el('sticky-motivation')) el('sticky-motivation').innerText = `💡 "${q}"`;
 
     // --- MODAL & TOOLS ---
     el("add-subject-btn").onclick = () => el("custom-subject-modal").classList.remove("hidden");
@@ -118,7 +117,7 @@ export function setupUI() {
 
 export function toggleSelectMode() {
     STATE.selectMode = !STATE.selectMode;
-    STATE.selectedIds.clear();
+    STATE.selectedIds.clear(); // Reset selection on toggle
     const box = el("chat-box");
     const toolbar = el("selection-toolbar");
 
@@ -139,10 +138,10 @@ export function loadLocalData() {
     // Reads from Phone/Local Storage
     const s = JSON.parse(localStorage.getItem("appana_v3"));
     if(s) { 
-        // ✅ FIX: Object.assign updates the CONST reference instead of replacing it
+        // Merge saved state into current STATE
         Object.assign(STATE, s);
         
-        el("user-xp").innerText = STATE.xp;
+        if(el("user-xp")) el("user-xp").innerText = STATE.xp;
         renderCustomSubjects();
         renderChapters();
     }
@@ -150,24 +149,24 @@ export function loadLocalData() {
 
 export function saveData() {
     // Writes to Phone/Local Storage
+    // NOTE: This now saves chatHistory as well
     localStorage.setItem("appana_v3", JSON.stringify(STATE));
 }
 
-// --- CUSTOM SUBJECTS (PERSISTENT & MULTIPLE) ---
+// --- CUSTOM SUBJECTS ---
 function saveCustomSubject() {
     const name = el("custom-sub-name").value;
     const content = el("custom-sub-text").value;
     
     if(!name) return alert("Please enter a subject name.");
     
-    // Add to array (Multiple Support)
     STATE.customSubjects.push({ 
         id: Date.now(), 
         name, 
         content: content || "No description." 
     });
     
-    saveData(); // Save to persistent storage immediately
+    saveData(); 
     renderCustomSubjects();
     
     el("custom-sub-name").value = "";
@@ -179,6 +178,7 @@ function saveCustomSubject() {
 
 function renderCustomSubjects() {
     const group = el("custom-subjects-group");
+    if(!group) return;
     group.innerHTML = "";
     STATE.customSubjects.forEach(s => {
         const o = document.createElement("option");
@@ -195,6 +195,7 @@ function addChapter() {
 
 function renderChapters() {
     const list = el("chapter-list");
+    if(!list) return;
     list.innerHTML = "";
     STATE.chapters.forEach((c, i) => {
         const d = document.createElement("div");

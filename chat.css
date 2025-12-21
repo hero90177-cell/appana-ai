@@ -69,7 +69,7 @@
   padding: 50px 12px 12px 12px; 
   display: flex; 
   flex-direction: column; 
-  gap: 8px; 
+  gap: 16px; /* Increased gap for better readability */
   scroll-behavior: smooth;
   /* Deep Blue Radial */
   background-image: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 60%);
@@ -80,6 +80,7 @@
     cursor: pointer; 
     border: 1px dashed rgba(255,255,255,0.3); 
     transition: 0.2s;
+    pointer-events: all !important; /* Force clickable */
 }
 .chat-box.select-mode-active .message:hover {
     background: rgba(255,255,255,0.05);
@@ -90,31 +91,45 @@
     box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
 }
 
-/* Message Bubbles */
+/* General Message Styles */
 .message { 
-  max-width: 80%; 
   width: fit-content;
   padding: 6px 12px; 
   border-radius: 12px; 
-  line-height: 1.4; 
-  font-size: 13.5px; 
+  line-height: 1.5; 
   position: relative; 
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   word-wrap: break-word;
 }
+
+/* APPANA AI STYLE (Free of Box, Bigger Text) */
 .ai-message { 
     align-self: flex-start; 
-    background: #12121e;
-    border: 1px solid rgba(255,255,255,0.06); 
-    border-bottom-left-radius: 2px; 
+    background: transparent; /* Removed Box */
+    border: none; /* Removed Border */
+    box-shadow: none; /* Removed Shadow */
     color: #e2e8f0;
+    
+    /* Bigger text for AI */
+    font-size: 16px; 
+    
+    padding-left: 0;
+    max-width: 95%; /* Use more width */
 }
+
+/* USER MESSAGE STYLE (Smaller Box) */
 .user-message { 
     align-self: flex-end; 
     background: linear-gradient(135deg, var(--accent), #0891b2);
     color: white; 
     border-bottom-right-radius: 2px; 
     box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+    
+    /* Smaller text for User */
+    font-size: 13.5px;
+    
+    /* Reduced Box Size */
+    max-width: 65%; 
+    margin-left: auto;
 }
 
 /* Composer */
