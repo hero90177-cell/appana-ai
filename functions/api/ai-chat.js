@@ -1,4 +1,4 @@
-// ai-chat.js (v2.0 Improved Ultra-Powerful AI Response)
+// ai-chat.js (v2.1 FINAL – Professional & Exam-Ready)
 
 export async function onRequestPost({ request, env }) {
   const cors = {
@@ -18,9 +18,9 @@ export async function onRequestPost({ request, env }) {
         gemini: !!env.GEMINI_API_KEY,
         groq: !!env.GROQ_API_KEY,
         cohere: !!env.COHERE_API_KEY,
-        hf: !!env.HF_API_KEY
+        hf: !!env.HF_API_KEY,
       };
-      const ok = Object.values(keys).some(k => k);
+      const ok = Object.values(keys).some(Boolean);
       return new Response(
         JSON.stringify({ status: ok ? "ok" : "fail", keys_detected: keys }),
         { headers: { ...cors, "Content-Type": "application/json" } }
@@ -37,7 +37,7 @@ export async function onRequestPost({ request, env }) {
       language = "English",
       examMode = "normal",
       uid = "guest",
-      goal = "",         // ✅ Optional Goal/Target
+      goal = "",
     } = body;
 
     if (!message && !image) throw new Error("No input provided");
@@ -68,26 +68,19 @@ export async function onRequestPost({ request, env }) {
     /* ===============================
        5️⃣ DYNAMIC SYSTEM PROMPT
        =============================== */
-    let tone = "friendly, encouraging, and exam-focused mentor";
-    let format = "concise and clear bullet points";
+    let tone = "friendly, encouraging, exam-focused mentor";
+    let format = "clear and concise bullet points";
 
-    // Adjust tone/format per examMode
-    if (examMode === "teacher") {
-        tone = "strict, formal, precise teacher, Indian syllabus aware";
-    } else if (examMode === "2marks") {
-        format = "short 2-3 sentences max, exam-style";
-    } else if (examMode === "5marks") {
-        format = "structured paragraph with 5 key points";
-    } else if (examMode === "8marks") {
-        format = "detailed essay style with introduction, body, conclusion";
-    }
+    if (examMode === "teacher") tone = "strict, formal, precise Indian syllabus teacher";
+    else if (examMode === "2marks") format = "2–3 sentences, exam-oriented";
+    else if (examMode === "5marks") format = "structured paragraph with 5 key points";
+    else if (examMode === "8marks") format = "detailed essay with introduction, body, conclusion";
 
-    // Add goal and subject in prompt
     const SYSTEM_PROMPT = `
-You are Appana AI 🦅
+You are Appana AI.
 Role: ${tone}
 Subject: ${subject}
-Language: ${language} (Use plain Indian English if requested)
+Language: ${language}
 Exam Mode: ${examMode}
 Goal/Target: ${goal}
 Format Requirement: ${format}
@@ -96,28 +89,27 @@ Context History:
 ${memory}
 
 Instructions:
-1. Access IndexedDB large subjects automatically for context.
-2. Be Indian-context aware (CBSE/ICSE/NBSE/state boards style).
-3. Always include friendly, motivating, syllabus-aligned advice.
-4. Dynamically insert emojis per sentence to enhance readability and engagement.
-5. Can access school boards, college portals, competitive exams websites for live guidance (placeholder).
-6. If message contains file text or PDF content, analyze it first.
-7. For passage generation, create unique reading comprehension passages with questions.
+1. Use IndexedDB large subjects automatically when provided.
+2. Be Indian syllabus aware (CBSE / ICSE / NBSE / State Boards).
+3. Keep explanations clear, accurate, and exam-relevant.
+4. Use emojis sparingly and professionally:
+   - Maximum ONE emoji per full response
+   - NEVER use emojis in definitions, formulas, or exam answers
+   - Emojis allowed only for guidance or motivation
+5. Analyze any provided file or PDF content first.
+6. Generate original passages when asked for comprehension.
 `;
 
-    // Append message
     let prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
 
     /* ===============================
        6️⃣ INDEXEDDB CONTEXT INJECTION
        =============================== */
-    // ✅ Inject large subjects from IndexedDB (auto-access)
-    // Placeholder: in Cloudflare Worker cannot access IndexedDB directly,
-    // but on client-side ui-manager.js handles it. AI gets content via "context injection"
-    // If body.largeSubjects sent, append their content:
-    if (body.largeSubjects && Array.isArray(body.largeSubjects)) {
-      const largeText = body.largeSubjects.map(s => `\n[${s.name}]: ${s.content}`).join("\n");
-      prompt += `\n\nAdditional Context (Large Subjects): ${largeText}`;
+    if (Array.isArray(body.largeSubjects)) {
+      const extra = body.largeSubjects
+        .map(s => `[${s.name}]\n${s.content}`)
+        .join("\n\n");
+      prompt += `\n\nAdditional Context:\n${extra}`;
     }
 
     let reply = null;
@@ -140,13 +132,11 @@ Instructions:
           }
         );
         const d = await r.json();
-        if (d.error) throw new Error(d.error.message);
         reply = d?.candidates?.[0]?.content?.parts?.[0]?.text;
       } catch (e) {
-        console.error("Gemini Error:", e);
-        debugLog.push(`❌ Gemini: ${e.message || "Unknown Error"}`);
+        debugLog.push(`Gemini failed`);
       }
-    } else debugLog.push("⚠️ Gemini: No API Key found");
+    }
 
     /* ===============================
        8️⃣ GROQ
@@ -165,9 +155,8 @@ Instructions:
           }),
         });
         const d = await r.json();
-        if (d.error) throw new Error(d.error.message);
         reply = d?.choices?.[0]?.message?.content;
-      } catch (e) { debugLog.push(`❌ Groq: ${e.message}`); }
+      } catch {}
     }
 
     /* ===============================
@@ -182,15 +171,14 @@ Instructions:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-              model: "command-r-08-2024",
-              message,
-              preamble: SYSTEM_PROMPT
+            model: "command-r-08-2024",
+            message,
+            preamble: SYSTEM_PROMPT,
           }),
         });
         const d = await r.json();
-        if (d.message) throw new Error(d.message);
         reply = d?.text;
-      } catch (e) { debugLog.push(`❌ Cohere: ${e.message}`); }
+      } catch {}
     }
 
     /* ===============================
@@ -210,37 +198,31 @@ Instructions:
           }
         );
         const d = await r.json();
-        if (d.error) throw new Error(d.error);
-        if (Array.isArray(d)) reply = d[0]?.generated_text;
-      } catch (e) { debugLog.push(`❌ HuggingFace: ${e.message}`); }
+        reply = Array.isArray(d) ? d[0]?.generated_text : null;
+      } catch {}
     }
 
     /* ===============================
-       1️⃣1️⃣ EMOJI LOGIC (DYNAMIC) 
+       1️⃣1️⃣ PROFESSIONAL EMOJI LOGIC
        =============================== */
-    if (reply) {
-      const sentences = reply.split(/([.!?]\s)/g);
-      reply = sentences.map(s => {
-        const trim = s.trim();
-        if (!trim) return s;
-        let emoji = "";
-        if (trim.toLowerCase().includes("good") || trim.toLowerCase().includes("well")) emoji = "✅";
-        else if (trim.toLowerCase().includes("warning") || trim.toLowerCase().includes("fast")) emoji = "⚠️";
-        else if (trim.toLowerCase().includes("error") || trim.toLowerCase().includes("fail")) emoji = "❌";
-        else if (trim.toLowerCase().includes("exam") || trim.toLowerCase().includes("time")) emoji = "⏰";
-        else if (trim.toLowerCase().includes("note") || trim.toLowerCase().includes("tip")) emoji = "💡";
-        else if (trim.toLowerCase().includes("amazing") || trim.toLowerCase().includes("great")) emoji = "🎉";
-        return trim + " " + emoji;
-      }).join(" ");
+    if (reply && !["2marks", "5marks", "8marks", "teacher"].includes(examMode)) {
+      const text = reply.toLowerCase();
+      let emoji = "";
+      if (text.includes("important")) emoji = "📌";
+      else if (text.includes("remember")) emoji = "💡";
+      else if (text.includes("warning")) emoji = "⚠️";
+      else if (text.includes("excellent")) emoji = "✅";
+
+      if (emoji) reply = `${emoji} ${reply}`;
     }
 
     /* ===============================
-       🔁 SAVE MEMORY (Smart Trim)
+       🔁 SAVE MEMORY
        =============================== */
-    if (uid !== "guest" && env.APPANA_KV && !image) {
-      let newMem = memory + `\nQ: ${message}\nA: ${reply}`;
-      if (newMem.length > 2000) newMem = newMem.substring(newMem.length - 2000);
-      await env.APPANA_KV.put(`mem:${uid}`, newMem, { expirationTtl: 86400 * 3 });
+    if (uid !== "guest" && env.APPANA_KV && reply) {
+      let mem = `${memory}\nQ: ${message}\nA: ${reply}`;
+      if (mem.length > 2000) mem = mem.slice(-2000);
+      await env.APPANA_KV.put(`mem:${uid}`, mem, { expirationTtl: 86400 * 3 });
     }
 
     /* ===============================
@@ -248,14 +230,14 @@ Instructions:
        =============================== */
     if (!reply) {
       return new Response(
-        JSON.stringify({
-          reply: "⚠️ **System Diagnosis:**\nAll AI brains failed. Debug Info:\n\n" + debugLog.join("\n") + "\n\n💡 _Check Cloudflare Keys._"
-        }),
+        JSON.stringify({ reply: "⚠️ All AI providers failed. Check API keys." }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    return new Response(JSON.stringify({ reply }), { headers: { ...cors, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ reply }), {
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
 
   } catch (err) {
     return new Response(
@@ -273,4 +255,4 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-                           }
+  }
