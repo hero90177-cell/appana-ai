@@ -1,4 +1,4 @@
-// chat-engine.js (vFixed - Timer Enabled + Better Text)
+// chat-engine.js (vFinal Fixed)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
@@ -42,33 +42,37 @@ async function handleSend() {
     const txt = input.value.trim();
     if (!txt) return;
 
-    // ✅ CRITICAL FIX: COMMAND DETECTOR FOR TIMERS
-    const lower = txt.toLowerCase();
+    // ✅ FIXED: ROBUST COMMAND DETECTION
+    const lower = txt.toLowerCase().replace(/\s+/g, ' ').trim(); // Normalize spaces
 
-    // 1. Stop Logic
-    if (lower === "stop") {
+    // 1. Stop Command
+    if (lower === "stop" || lower === "stop timer" || lower === "stop stopwatch") {
         timer.stop();
-        appendMsg("System", "⏹ Timer stopped.", "ai-message", "sys_" + Date.now());
+        appendMsg("System", "⏹ Timer/Stopwatch stopped.", "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
 
-    // 2. Stopwatch Logic
+    // 2. Stopwatch Command
     if (lower.includes("start stopwatch")) {
         timer.startStopwatch();
-        appendMsg("System", "⏱ **Stopwatch Started!** Focus now.", "ai-message", "sys_" + Date.now());
+        appendMsg("System", "⏱ **Stopwatch Started!** Good luck.", "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
 
-    // 3. Timer Logic (e.g., "Set timer 20 minutes")
-    const timerMatch = lower.match(/set timer\s+(\d+)\s*(min|minute|sec|second)s?/);
+    // 3. Timer Command (Matches: "set timer 20 min", "set timer 20 mins", "timer 20 min")
+    // Regex explanation: look for number followed optionally by space and min/sec
+    const timerMatch = lower.match(/(?:set\s*)?timer\s+(\d+)\s*(min|sec)/);
+    
     if (timerMatch) {
         let val = parseInt(timerMatch[1]);
-        if (timerMatch[2].startsWith("min")) val *= 60; // Convert to seconds
+        const unit = timerMatch[2];
+        
+        if (unit.startsWith("min")) val *= 60; // Convert minutes to seconds
         
         timer.startTimer(val);
-        appendMsg("System", `⏳ **Timer Set:** ${Math.floor(val/60)} minutes. Go!`, "ai-message", "sys_" + Date.now());
+        appendMsg("System", `⏳ **Timer Set:** ${Math.floor(val/60)}m ${val%60}s. Focus!`, "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
@@ -82,7 +86,7 @@ async function handleSend() {
 
     // AI Placeholder
     const aiId = "a_" + Date.now();
-    appendMsg("🦅 Appana AI", "Thinking…", "ai-message", aiId, true); // Removed ai-big to keep style consistent
+    appendMsg("🦅 Appana AI", "Thinking…", "ai-message", aiId, true);
 
     let context = "";
     const sub = el("subject-selector")?.value;
@@ -110,10 +114,9 @@ async function handleSend() {
         const d = await r.json();
         const reply = d.reply || "Error occurred. Try again.";
 
-        // ✅ FORMATTING FIX: Parse Markdown for attractive text
+        // ✅ FORMATTING: Attractive Text
         const aiEl = el(aiId);
         if (aiEl) {
-            // Using marked.parse if available, else plain text
             const formatted = (typeof marked !== 'undefined' && marked.parse) 
                 ? marked.parse(reply) 
                 : reply.replace(/\n/g, "<br>");
@@ -149,7 +152,7 @@ export function appendMsg(who, txt, cls, id, save = true) {
     d.className = `message ${cls}`;
     d.id = id;
 
-    // Initial Render (uses basic replacement, real formatting happens after API load)
+    // Initial Render
     const displayTxt = (typeof marked !== 'undefined' && marked.parse && cls.includes('ai-message')) 
         ? marked.parse(txt) 
         : txt.replace(/\n/g, "<br>");

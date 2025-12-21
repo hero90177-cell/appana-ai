@@ -1,6 +1,6 @@
-// main.js (vFinal - Features Active)
+// main.js (vFinal Fixed)
 import { loadComponents } from './loader.js';
-import { setupAuthListener, checkSystemHealth } from './auth-manager.js';
+import { setupAuthListener } from './auth-manager.js';
 import { setupUI, loadLocalData, STATE } from './ui-manager.js';
 import { setupChat } from './chat-engine.js';
 
@@ -82,8 +82,6 @@ function startSystemHeartbeat() {
         // 2. Check AI (Fake ping check based on object existence)
         const aiDot = document.getElementById("api-status");
         if(aiDot) {
-            // We assume AI is active if keys exist (checked in chat-engine usually)
-            // For UI feedback, we default to active unless explicit error
             aiDot.classList.add("active");
         }
     }, 3000);
@@ -95,21 +93,23 @@ function enableMessageSelection() {
     if(!box) return;
     
     box.addEventListener("click", (e) => {
-        // Check if we are in select mode (access global state)
-        // Note: STATE needs to be exported from ui-manager.js
+        // ✅ Check if Select Mode is ON in UI Manager
         if(STATE && STATE.selectMode) {
             const msgDiv = e.target.closest(".message");
             if(msgDiv) {
                 msgDiv.classList.toggle("selected");
                 
+                // ✅ SYNC WITH STATE (Crucial for Delete)
+                if(msgDiv.classList.contains("selected")) {
+                    STATE.selectedIds.add(msgDiv.id);
+                } else {
+                    STATE.selectedIds.delete(msgDiv.id);
+                }
+                
                 // Update counter
-                const count = document.querySelectorAll(".message.selected").length;
+                const count = STATE.selectedIds.size;
                 const countLabel = document.getElementById("selection-count");
                 if(countLabel) countLabel.innerText = `${count} Selected`;
-                
-                // Track IDs
-                if(msgDiv.classList.contains("selected")) STATE.selectedIds.add(msgDiv.id);
-                else STATE.selectedIds.delete(msgDiv.id);
             }
         }
     });
