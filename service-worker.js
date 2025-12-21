@@ -1,19 +1,33 @@
-// ✅ Appana Service Worker v13 (Updated for Modular Files)
-const CACHE_NAME = "appana-v13-modular";
+// ✅ Appana Service Worker v14 (Updated for Modular Layout)
+const CACHE_NAME = "appana-v14-modular-split";
 
-// We must cache ALL new files, or the app will break offline.
+// ⚠️ CRITICAL: All new modular files must be listed here.
+// If missing, the app will show blank sections when offline.
 const ASSETS = [
   "/",
   "/index.html",
-  "/style.css",
+  "/global.css",       // Replaces style.css
   "/manifest.json",
   "/firebase-init.js",
-  // ✅ NEW FILES (Replaces old script.js)
+  
+  // ✅ CORE JS MODULES
   "/main.js",
+  "/loader.js",        // NEW: Handles the split loading
   "/auth-manager.js",
   "/ui-manager.js",
   "/chat-engine.js",
-  // External Libraries
+
+  // ✅ NEW UI FRAGMENTS (HTML)
+  "/menu.html",
+  "/chat.html",
+  "/tools.html",
+
+  // ✅ NEW UI FRAGMENTS (CSS)
+  "/menu.css",
+  "/chat.css",
+  "/tools.css",
+
+  // ✅ EXTERNAL LIBRARIES (Keep these)
   "https://cdn.jsdelivr.net/npm/marked/marked.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
   "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js",
@@ -23,15 +37,18 @@ const ASSETS = [
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
 ];
 
+// 1. INSTALL: Cache everything
 self.addEventListener("install", (e) => {
   self.skipWaiting(); 
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      // 'reload' ensures we get fresh versions from server during install
       return cache.addAll(ASSETS.map(url => new Request(url, { cache: 'reload' })));
     })
   );
 });
 
+// 2. ACTIVATE: Clean up old caches (v13 and older)
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) => Promise.all(
@@ -41,23 +58,26 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
+// 3. FETCH: Network for API, Cache for Assets
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
-  // 1. API & Auth: Network Only
+  // A. API & Auth: Always Network Only
   if (url.pathname.startsWith("/api/") || url.host.includes("googleapis.com") || url.host.includes("firebase")) {
-    // Exception for static JS/CSS from CDNs
-    if (!url.pathname.endsWith(".js") && !url.pathname.endsWith(".css")) {
+    // Exception: Allow caching of static scripts/css from CDNs (fonts, firebase SDKs if used via CDN)
+    if (!url.pathname.endsWith(".js") && !url.pathname.endsWith(".css") && !url.pathname.endsWith(".woff2")) {
        return; 
     }
   }
 
-  // 2. Cache First, Fallback to Network
+  // B. Stale-While-Revalidate for HTML/CSS fragments?
+  // No, Stick to Cache First for speed, rely on version bump to update.
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
+
       return fetch(e.request).then((response) => {
-        // Dynamic Caching for new fonts/icons
+        // Dynamic Caching for new assets not in ASSETS list (like user uploaded images or new font files)
         if (response.status === 200 && (url.host.includes("cdn") || url.pathname.endsWith(".png"))) {
            const clone = response.clone();
            caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));

@@ -1,0 +1,27 @@
+/* Menu Specific Styles */
+.sidebar { padding: 18px; gap: 16px; overflow-y: auto; }
+
+.motivation-card { 
+    background: linear-gradient(135deg, #1e1b4b, #701a75); 
+    border: none; padding: 12px; border-radius: 12px; 
+    text-align: center; margin-bottom: 10px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.stats-box {
+    background:#111118; 
+    padding:15px; 
+    border-radius:12px; 
+    border:1px solid rgba(255,255,255,0.1); 
+    margin-bottom:15px;
+}
+
+.menu-label {
+    display:block; margin-top:15px; font-size:12px; color:#a1a1aa;
+}
+
+.menu-select {
+    margin-top:8px; padding: 12px;
+    background: #0f0f16;
+    color: white;
+}

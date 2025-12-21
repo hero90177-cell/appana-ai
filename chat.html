@@ -1,0 +1,51 @@
+<header class="chat-header">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="font-size:20px;">💬</span>
+    <div><h2 id="chat-title-text" style="margin:0; font-size:16px;">Study Chat</h2><small style="font-size:10px; opacity:0.6;">Encrypted 🔒</small></div>
+  </div>
+  
+  <div class="header-actions">
+    <div id="magic-timer" class="timer-display hidden">
+        <span id="timer-icon">⏱</span> <span id="timer-val">00:00</span>
+    </div>
+
+    <div class="status-group">
+        <div class="status-item"><span id="net-status" class="status-dot"></span> NET</div>
+        <div class="status-item"><span id="api-status" class="status-dot"></span> AI</div>
+    </div>
+
+    <button id="select-mode-btn" class="icon-btn" style="border-radius:50%; border:1px solid #3b82f6; color:#3b82f6;">✓</button>
+  </div>
+</header>
+
+<div id="sticky-motivation">"Loading daily motivation..."</div>
+
+<div id="selection-toolbar" class="hidden">
+    <span id="selection-count" style="color:white; font-weight:bold;">0 Selected</span>
+    <div style="display:flex; gap:8px;">
+        <button id="confirm-delete-btn" style="background:#ef4444; color:white; width:auto; padding:6px 14px; margin:0;">Delete</button>
+        <button id="cancel-select-btn" style="background:rgba(0,0,0,0.3); color:white; width:auto; padding:6px 14px; margin:0;">Cancel</button>
+    </div>
+</div>
+
+<div id="chat-box" class="chat-box">
+  <div class="message ai-message" id="welcome-msg">
+    <strong>🦅 Appana AI:</strong>
+    <p>Hello! I am ready. Add a custom subject or start chatting.</p>
+  </div>
+</div>
+
+<div class="composer-area">
+  <div id="file-preview" class="hidden">
+    <span id="file-name">File</span> <span id="ocr-status">Processing...</span> <button id="remove-file" style="width:auto; padding:2px 8px; margin:0;">x</button>
+  </div>
+  
+  <form class="composer" onsubmit="return false;">
+    <label for="file-upload" class="icon-btn" style="cursor:pointer; font-size:20px; color:#a1a1aa;">📎</label>
+    <input type="file" id="file-upload" accept="image/*, .pdf" hidden>
+    
+    <button id="voice-btn" class="icon-btn" style="background:none; border:none; font-size:20px;">🎤</button>
+    <textarea id="user-input" placeholder="Type your doubt here..." rows="1"></textarea>
+    <button id="send-btn" class="icon-btn" style="background:var(--accent); color:white; border-radius:50%;">➤</button>
+  </form>
+</div>

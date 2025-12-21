@@ -1,0 +1,9 @@
+/* Tools Specific Styles */
+.right-panel { padding: 18px; gap: 16px; overflow-y: auto; }
+
+.tool-card {
+    background: transparent;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 15px;
+}
+.tool-card:last-child { border-bottom: none; }

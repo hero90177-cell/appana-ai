@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#000000"> <title>Appana AI — Study Mentor</title>
+  
+  <link rel="stylesheet" href="global.css">
+  
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <script>
+      var pdfjsLib = window['pdfjs-dist/build/pdf'];
+      if(pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+
+<div id="app" class="app-container">
+  
+  <aside id="section-menu" class="sidebar"></aside>
+
+  <main id="section-chat" class="main-area active-panel"></main>
+
+  <aside id="section-tools" class="right-panel"></aside>
+
+  <nav id="mobile-nav" class="mobile-nav mobile-only">
+    <button class="nav-btn" data-target="section-menu"><span>☰</span><small>Menu</small></button>
+    <button class="nav-btn active" data-target="section-chat"><span>💬</span><small>Chat</small></button>
+    <button class="nav-btn" data-target="section-tools"><span>⚡</span><small>Tools</small></button>
+  </nav>
+
+</div>
+
+<div id="custom-subject-modal" class="hidden global-modal">
+  <div class="modal-content">
+    <h3 style="color:var(--accent); margin-top:0;">Add Custom Subject</h3>
+    <input id="custom-sub-name" placeholder="Subject Name">
+    <input type="file" id="custom-sub-file" style="margin-top:10px;">
+    <div id="custom-sub-status" style="font-size:12px; color:#d946ef; margin:5px 0;"></div>
+    <textarea id="custom-sub-text" placeholder="Content..." style="height:100px; margin-top:5px;"></textarea>
+    <div style="display:flex; gap:10px; margin-top:15px;">
+        <button id="save-subject-btn" class="primary">Save & Remember</button>
+        <button id="close-modal-btn" style="background:#ef4444;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

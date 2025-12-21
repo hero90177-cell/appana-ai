@@ -1,0 +1,131 @@
+:root {
+  /* 🎨 REVISED DARKER PALETTE */
+  --bg: #000000;            /* Pure Black */
+  --panel: #050510;         /* Very Dark Blue/Black */
+  --panel-border: 1px solid rgba(255, 255, 255, 0.08);
+  
+  --accent: #06b6d4;        /* Cyan Glow */
+  --accent-glow: rgba(6, 182, 212, 0.4);
+  
+  --secondary: #d946ef;     /* Violet Neon */
+  
+  --success: #10b981;
+  --danger: #ef4444;        
+  --text-main: #f8fafc;
+  --text-muted: #64748b;    
+  
+  --glass: rgba(0, 0, 0, 0.6);
+  --radius: 16px;
+  --input-bg: #0f0f16;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  /* New Deep Dark Gradient */
+  background-image: 
+    linear-gradient(180deg, #020205 0%, #0a0a1f 100%);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
+  height: 100vh;
+  height: 100dvh; 
+  overflow: hidden;
+  font-size: 14px; 
+}
+
+.hidden { display: none !important; }
+
+/* LAYOUT GRID */
+.app-container { 
+  display: grid; 
+  grid-template-columns: 280px 1fr 300px; 
+  gap: 12px; 
+  padding: 12px; 
+  height: 100%; 
+  width: 100%;
+}
+
+/* Common Panel Styles */
+.sidebar, .right-panel, .main-area {
+  background: rgba(5, 5, 16, 0.85); /* Darker Panel */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--panel-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+/* Button & Input Standards */
+button, select, input { width: 100%; border-radius: 10px; font-size: 13px; border: 1px solid rgba(255,255,255,0.1); }
+button { 
+    padding: 12px; margin-top: 8px; 
+    background: #12121a; 
+    color: #e4e4e7; 
+    cursor: pointer; font-weight: 500; transition: 0.2s; 
+    min-height: 40px;
+}
+button:active { transform: scale(0.98); }
+button.primary { 
+    background: var(--accent); 
+    color: black; 
+    border: none; 
+    font-weight: 700; 
+    box-shadow: 0 4px 15px var(--accent-glow);
+}
+button.icon-btn { 
+    padding: 8px; width: 40px; height: 40px; 
+    display: flex; align-items: center; justify-content: center; margin: 0; 
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-muted);
+}
+button.icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Global Modal */
+.global-modal {
+    position:fixed; top:0; left:0; width:100%; height:100%; 
+    background:rgba(0,0,0,0.9); z-index:2000; 
+    display:flex; justify-content:center; align-items:center;
+}
+.modal-content {
+    background: #0b0b12; padding:20px; border-radius:16px; 
+    width:90%; max-width:400px; border:1px solid #333;
+}
+textarea { 
+    background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); 
+    width: 100%; border-radius: 8px; padding: 10px; outline:none; resize: none;
+}
+
+/* Mobile Nav Styles */
+.mobile-nav { display: none; }
+
+@media (max-width: 900px) {
+  .app-container { display: block; padding: 0; position: relative; height: 100dvh; width: 100vw; overflow: hidden; }
+  
+  .sidebar, .main-area, .right-panel { 
+    position: fixed; top: 0; left: 0; right: 0; bottom: 60px; 
+    width: 100%; height: auto; border-radius: 0; border: none; z-index: 10; 
+    background: var(--bg); display: none; padding-bottom: 0; 
+  }
+
+  .active-panel { display: flex !important; }
+
+  .mobile-nav { 
+    display: flex; position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; 
+    background: rgba(0, 0, 0, 0.95); 
+    border-top: 1px solid rgba(255,255,255,0.1); 
+    z-index: 9999; justify-content: space-around; align-items: center; 
+    backdrop-filter: blur(10px);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .nav-btn { background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 0; padding: 0; height: auto; }
+  .nav-btn.active { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
+  .nav-btn span { font-size: 20px; }
+  .nav-btn small { font-size: 9px; font-weight: 600; }
+}
