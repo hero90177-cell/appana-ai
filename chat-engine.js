@@ -1,4 +1,4 @@
-// chat-engine.js (vFinal Fixed)
+// chat-engine.js (vFinal - Smart Timer & Command Detection)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
@@ -42,11 +42,12 @@ async function handleSend() {
     const txt = input.value.trim();
     if (!txt) return;
 
-    // ✅ FIXED: ROBUST COMMAND DETECTION
-    const lower = txt.toLowerCase().replace(/\s+/g, ' ').trim(); // Normalize spaces
+    // ✅ SMART TIMER DETECTION
+    // We lowercase and clean up the input to check for commands
+    const lower = txt.toLowerCase().replace(/\s+/g, ' ').trim();
 
-    // 1. Stop Command
-    if (lower === "stop" || lower === "stop timer" || lower === "stop stopwatch") {
+    // 1. Stop Command (Stopwatch or Timer)
+    if (lower === "stop" || lower.includes("stop timer") || lower.includes("stop stopwatch")) {
         timer.stop();
         appendMsg("System", "⏹ Timer/Stopwatch stopped.", "ai-message", "sys_" + Date.now());
         input.value = "";
@@ -54,25 +55,28 @@ async function handleSend() {
     }
 
     // 2. Stopwatch Command
-    if (lower.includes("start stopwatch")) {
+    if (lower.includes("start stopwatch") || lower === "stopwatch") {
         timer.startStopwatch();
-        appendMsg("System", "⏱ **Stopwatch Started!** Good luck.", "ai-message", "sys_" + Date.now());
+        appendMsg("System", "⏱ **Stopwatch Started!** Focus time.", "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
 
-    // 3. Timer Command (Matches: "set timer 20 min", "set timer 20 mins", "timer 20 min")
-    // Regex explanation: look for number followed optionally by space and min/sec
-    const timerMatch = lower.match(/(?:set\s*)?timer\s+(\d+)\s*(min|sec)/);
-    
-    if (timerMatch) {
-        let val = parseInt(timerMatch[1]);
-        const unit = timerMatch[2];
+    // 3. Smart Timer Command (Flexible)
+    // Matches: "set timer", "timer 20", "timer 10 mins", "set timer 5 min"
+    if (lower.includes("timer")) {
+        // Try to find a number in the text
+        const numMatch = lower.match(/(\d+)/);
+        let minutes = 25; // Default to 25 mins if user just says "set timer"
         
-        if (unit.startsWith("min")) val *= 60; // Convert minutes to seconds
+        if (numMatch) {
+            minutes = parseInt(numMatch[1]);
+        }
         
-        timer.startTimer(val);
-        appendMsg("System", `⏳ **Timer Set:** ${Math.floor(val/60)}m ${val%60}s. Focus!`, "ai-message", "sys_" + Date.now());
+        const seconds = minutes * 60;
+        timer.startTimer(seconds);
+        
+        appendMsg("System", `⏳ **Timer Set:** ${minutes} minutes. Let's study!`, "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
@@ -114,7 +118,7 @@ async function handleSend() {
         const d = await r.json();
         const reply = d.reply || "Error occurred. Try again.";
 
-        // ✅ FORMATTING: Attractive Text
+        // ✅ FORMATTING: Attractive Text (Markdown)
         const aiEl = el(aiId);
         if (aiEl) {
             const formatted = (typeof marked !== 'undefined' && marked.parse) 

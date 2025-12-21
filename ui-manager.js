@@ -1,5 +1,5 @@
-// ui-manager.js (vFixed - Delete & Timer Connected)
-import { deleteMessagesFromCloud } from './auth-manager.js'; // ✅ Imported Delete Logic
+// ui-manager.js (vFixed - Robust Delete)
+import { deleteMessagesFromCloud } from './auth-manager.js';
 
 export const STATE = {
     xp: 0,
@@ -13,7 +13,7 @@ export const STATE = {
 
 const el = id => document.getElementById(id);
 
-/* ---------------- TIMER (Preserved) ---------------- */
+/* ---------------- TIMER LOGIC (Preserved & Connected) ---------------- */
 let timerInterval = null;
 let timerSeconds = 0;
 let paused = false;
@@ -24,11 +24,17 @@ export const timer = {
     startTimer(seconds) { timer.stop(); timerMode="timer"; timerSeconds=seconds; paused=false; timer.run(); },
     run() {
         if(timerInterval) clearInterval(timerInterval);
-        const box=el("magic-timer"); if(box) box.classList.remove("hidden");
+        const box=el("magic-timer"); 
+        if(box) box.classList.remove("hidden"); // Show the timer UI
+        
         timerInterval=setInterval(()=>{
             if(paused) return;
             timerSeconds = timerMode==="stopwatch" ? timerSeconds+1 : timerSeconds-1;
-            if(timerMode==="timer" && timerSeconds<=0){ timer.stop(); alert("⏰ Time is up!"); }
+            
+            if(timerMode==="timer" && timerSeconds<=0){ 
+                timer.stop(); 
+                alert("⏰ Time is up!"); 
+            }
             timer.update();
         },1000);
         timer.update();
@@ -36,8 +42,19 @@ export const timer = {
     pause(){ paused=true; },
     resume(){ paused=false; },
     reset(){ timerSeconds=0; timer.update(); },
-    stop(){ clearInterval(timerInterval); timerInterval=null; timerSeconds=0; paused=false; timerMode=null; el("magic-timer")?.classList.add("hidden"); },
-    update(){ const m=String(Math.floor(timerSeconds/60)).padStart(2,"0"); const s=String(timerSeconds%60).padStart(2,"0"); el("timer-val")&&(el("timer-val").innerText=`${m}:${s}`); }
+    stop(){ 
+        clearInterval(timerInterval); 
+        timerInterval=null; 
+        timerSeconds=0; 
+        paused=false; 
+        timerMode=null; 
+        el("magic-timer")?.classList.add("hidden"); 
+    },
+    update(){ 
+        const m=String(Math.floor(timerSeconds/60)).padStart(2,"0"); 
+        const s=String(timerSeconds%60).padStart(2,"0"); 
+        el("timer-val")&&(el("timer-val").innerText=`${m}:${s}`); 
+    }
 };
 
 /* ---------------- UI INIT ---------------- */
@@ -69,25 +86,29 @@ export function setupUI() {
     click("select-mode-btn", toggleSelectMode);
     click("cancel-select-btn", toggleSelectMode);
     
-    // ✅ CRITICAL FIX: ENABLE DELETE BUTTON
+    // ✅ ROBUST DELETE FIX: Looks at the DOM directly to ensure deletion
     click("confirm-delete-btn", async () => {
-        const ids = Array.from(STATE.selectedIds);
-        if(ids.length === 0) return;
+        // 1. Find all visible messages that are selected
+        const selectedElements = document.querySelectorAll(".message.selected");
+        if(selectedElements.length === 0) return;
 
-        // A. Remove from Screen (DOM)
-        ids.forEach(id => {
-            const domEl = document.getElementById(id);
-            if(domEl) domEl.remove();
+        const idsToDelete = [];
+
+        // 2. Remove them visually immediately
+        selectedElements.forEach(domEl => {
+            idsToDelete.push(domEl.id);
+            domEl.remove();
         });
 
-        // B. Remove from Memory (State)
-        STATE.chatHistory = STATE.chatHistory.filter(msg => !STATE.selectedIds.has(msg.id));
+        // 3. Update Memory (State)
+        STATE.chatHistory = STATE.chatHistory.filter(msg => !idsToDelete.includes(msg.id));
+        STATE.selectedIds.clear();
         saveData();
 
-        // C. Remove from Cloud (Firebase)
-        await deleteMessagesFromCloud(ids);
+        // 4. Update Cloud (Firebase)
+        await deleteMessagesFromCloud(idsToDelete);
 
-        // D. Exit Selection Mode
+        // 5. Exit Selection Mode
         toggleSelectMode();
     });
 
@@ -115,7 +136,7 @@ export function setupUI() {
     } catch(err) { console.log("Data load warning:", err); }
 }
 
-/* ---------------- LOCAL STORAGE ---------------- */
+/* ---------------- HELPERS (Storage, Subjects, Chapters) ---------------- */
 export function loadLocalData() {
     const raw=localStorage.getItem("appana_v3"); 
     if(raw) {
@@ -129,11 +150,8 @@ export function loadLocalData() {
             renderChapters();
         } catch(e) { console.error("Save file corrupted"); }
     }
-
     const savedTarget = localStorage.getItem("appana_target_exam");
-    if (savedTarget && el("subject-selector")) {
-        el("subject-selector").value = savedTarget;
-    }
+    if (savedTarget && el("subject-selector")) el("subject-selector").value = savedTarget;
 }
 
 export function saveData(){
@@ -145,12 +163,10 @@ export function saveData(){
     }));
 }
 
-/* ---------------- CUSTOM SUBJECTS ---------------- */
 function saveCustomSubject(){
     const name=el("custom-sub-name")?.value.trim();
     const content=el("custom-sub-text")?.value.trim();
     if(!name) return alert("Subject name required");
-
     STATE.customSubjects.push({ id:crypto.randomUUID(), name, content });
     saveData();
     renderCustomSubjects();
@@ -168,7 +184,6 @@ function renderCustomSubjects(){
     });
 }
 
-/* ---------------- LARGE SUBJECTS (IndexedDB) ---------------- */
 let db=null;
 async function initIndexedDB(){
     if (!window.indexedDB) return;
@@ -176,9 +191,7 @@ async function initIndexedDB(){
         const request=indexedDB.open("appana_large_subjects",1);
         request.onupgradeneeded=e=>{
             db=e.target.result;
-            if(!db.objectStoreNames.contains("subjects")) {
-                db.createObjectStore("subjects",{keyPath:"id"});
-            }
+            if(!db.objectStoreNames.contains("subjects")) db.createObjectStore("subjects",{keyPath:"id"});
         };
         request.onsuccess=e=>{ db=e.target.result; resolve(db); };
         request.onerror=e=>resolve(null);
@@ -189,13 +202,11 @@ async function saveLargeSubject(){
     const name=el("large-sub-name")?.value.trim();
     const fileInput=el("large-sub-file");
     if(!name || !fileInput?.files.length) return alert("Name & file required");
-
     const file=fileInput.files[0];
     const reader=new FileReader();
     reader.onload = function(e) {
         if(!db) return alert("Database not ready");
-        const dataURL = e.target.result;
-        const obj = { id: crypto.randomUUID(), name, content: dataURL };
+        const obj = { id: crypto.randomUUID(), name, content: e.target.result };
         const tx = db.transaction("subjects", "readwrite");
         tx.objectStore("subjects").add(obj);
         tx.oncomplete = () => {
@@ -211,10 +222,7 @@ async function loadLargeSubjects(){
     if(!db) return;
     const tx=db.transaction("subjects","readonly");
     const req = tx.objectStore("subjects").getAll();
-    req.onsuccess = () => {
-        STATE.largeSubjects = req.result || [];
-        renderLargeSubjects();
-    };
+    req.onsuccess = () => { STATE.largeSubjects = req.result || []; renderLargeSubjects(); };
 }
 
 function renderLargeSubjects(){
@@ -228,7 +236,6 @@ function renderLargeSubjects(){
     });
 }
 
-/* ---------------- CHAPTERS ---------------- */
 function addChapter(){
     const input = el("chapter-name");
     const v = input?.value.trim();
@@ -244,8 +251,7 @@ function renderChapters(){
     list.innerHTML="";
     STATE.chapters.forEach((c,i)=>{
         const d=document.createElement("div");
-        d.innerHTML=`<span style="text-decoration:${c.done?"line-through":"none"}">${c.name}</span>
-                     <button data-i="${i}">✖</button>`;
+        d.innerHTML=`<span style="text-decoration:${c.done?"line-through":"none"}">${c.name}</span><button data-i="${i}">✖</button>`;
         d.onclick=e=>{
             if(e.target.tagName==="BUTTON") STATE.chapters.splice(i,1);
             else c.done=!c.done;
@@ -256,42 +262,26 @@ function renderChapters(){
     });
 }
 
-/* ---------------- SELECT MODE ---------------- */
 export function toggleSelectMode(){
     STATE.selectMode=!STATE.selectMode;
     STATE.selectedIds.clear();
-    
     const toolbar = el("selection-toolbar");
     if(toolbar) toolbar.classList.toggle("hidden",!STATE.selectMode);
-    
-    // Clear visual selection from all messages if cancelling
     if(!STATE.selectMode) {
         document.querySelectorAll(".message.selected").forEach(m => m.classList.remove("selected"));
     }
-    
     el("selection-count")&&(el("selection-count").innerText="0 Selected");
 }
 
-/* ---------------- TOOLS PANEL LOGIC ---------------- */
 function sendToolRequest(command) {
-    const topicInput = el("topic-input"); 
-    const topic = topicInput?.value.trim() || "";
-    const fullMessage = topic ? `${command} for ${topic}` : command;
-
-    // Switch to chat panel
-    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".panel, .main-area, .sidebar, .right-panel").forEach(p => p.classList.remove("active-panel"));
-    
-    el("section-chat")?.classList.add("active-panel");
-    const chatBtn = document.querySelector(`.nav-btn[data-target="section-chat"]`);
-    if(chatBtn) chatBtn.classList.add("active");
-
-    const inputBox = el("user-input");
-    const sendBtn = el("send-btn");
-    if (inputBox && sendBtn) {
-        inputBox.value = fullMessage;
-        sendBtn.click();
-    }
+    const topic = el("topic-input")?.value.trim() || "";
+    const msg = topic ? `${command} for ${topic}` : command;
+    document.querySelector(`.nav-btn[data-target="section-chat"]`)?.click();
+    setTimeout(() => {
+        const inp = el("user-input");
+        const btn = el("send-btn");
+        if(inp && btn) { inputBox.value=msg; btn.click(); }
+    }, 100);
 }
 
 function exportChatPDF(){
@@ -314,9 +304,6 @@ function exportChatPDF(){
 function clearAllData(){
     if(!confirm("⚠ Are you sure? This will delete all history.")) return;
     localStorage.clear();
-    if(db){
-        const tx=db.transaction("subjects","readwrite");
-        tx.objectStore("subjects").clear();
-    }
+    if(db) db.transaction("subjects","readwrite").objectStore("subjects").clear();
     window.location.reload();
 }

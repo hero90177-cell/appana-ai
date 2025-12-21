@@ -23,15 +23,16 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.2); /* Stronger Green BG */
   border: 1px solid #10b981;
   color: #34d399;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
   font-family: monospace; /* Digital clock look */
-  font-size: 14px;
+  font-size: 15px;
   font-weight: bold;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+  margin-right: 10px;
 }
 
 /* STATUS DOTS */
@@ -77,13 +78,13 @@
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Space between messages */
+  gap: 24px; /* More space between messages */
   padding-bottom: 80px; 
 }
 
 /* MESSAGES COMMON STYLE */
 .message {
-  max-width: 88%;
+  max-width: 92%;
   padding: 10px 14px;
   border-radius: 16px;
   font-size: 16px;
@@ -91,19 +92,14 @@
   word-wrap: break-word;
 }
 
-/* ✅ AI MESSAGE FIX: 
-   - No Background (Transparent)
-   - No Border
-   - No Shadow
-   - Full Width Text
-*/
+/* ✅ AI MESSAGE FIX: Transparent & Clean */
 .ai-message {
   align-self: flex-start;
   background: transparent !important; /* 🚫 No Bubble Color */
   border: none !important;            /* 🚫 No Border */
   box-shadow: none !important;        /* 🚫 No Shadow */
   color: #e2e8f0;
-  padding: 0;                         /* Remove padding to look like plain text */
+  padding: 0;                         /* Remove padding */
   margin-left: 0;
   width: 100%;
   max-width: 100%;
@@ -111,8 +107,8 @@
 
 /* AI Text Formatting (Attractive & Big) */
 .ai-message strong { color: #22d3ee; font-weight: 700; } /* Cyan Headers */
-.ai-message p { margin: 8px 0; font-size: 17px; }        /* Bigger Text */
-.ai-message ul { padding-left: 20px; color: #cbd5e1; }
+.ai-message p { margin: 8px 0; font-size: 17px; line-height: 1.7; } /* Bigger Text & Spacing */
+.ai-message ul { padding-left: 20px; color: #cbd5e1; margin: 10px 0; }
 .ai-message li { margin-bottom: 8px; }
 
 /* USER MESSAGE (Keep the Bubble for User) */
