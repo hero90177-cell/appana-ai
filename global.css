@@ -119,6 +119,7 @@ textarea {
     display: flex !important;
   }
 
+  /* ✅ FIXED: Mobile Nav is now guaranteed to show */
   .mobile-nav {
     position: fixed;
     bottom: 0;

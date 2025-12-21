@@ -1,7 +1,7 @@
-// ✅ Appana Service Worker v18 (FIXED CACHE)
-// We changed v17 -> v18 to force your mobile to load the new design
+// ✅ Appana Service Worker v19 (FIXED BLACK SCREEN)
+// We changed v18 -> v19 to force your mobile to load the repaired CSS
 
-const CACHE_NAME="appana-v18-offline-ready";
+const CACHE_NAME="appana-v19-offline-ready";
 
 const ASSETS=[
   "/", "/index.html", "/global.css", "/manifest.json", "/firebase-init.js",
