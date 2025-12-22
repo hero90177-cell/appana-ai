@@ -1,4 +1,4 @@
-// ui-manager.js (vFixed - Robust Delete)
+// ui-manager.js (vFixed - Robust Delete & Timer)
 import { deleteMessagesFromCloud } from './auth-manager.js';
 
 export const STATE = {
@@ -83,14 +83,22 @@ export function setupUI() {
     click("save-subject-btn", saveCustomSubject);
 
     click("mark-chapter-btn", addChapter);
+    
+    // ✅ SELECTION MODE HANDLERS
     click("select-mode-btn", toggleSelectMode);
     click("cancel-select-btn", toggleSelectMode);
     
-    // ✅ ROBUST DELETE FIX: Looks at the DOM directly to ensure deletion
+    // ✅ CONFIRM DELETE HANDLER
     click("confirm-delete-btn", async () => {
+        console.log("🗑 Delete button clicked");
         // 1. Find all visible messages that are selected
         const selectedElements = document.querySelectorAll(".message.selected");
-        if(selectedElements.length === 0) return;
+        if(selectedElements.length === 0) {
+            alert("No messages selected.");
+            return;
+        }
+
+        if(!confirm(`Delete ${selectedElements.length} messages?`)) return;
 
         const idsToDelete = [];
 
@@ -267,9 +275,13 @@ export function toggleSelectMode(){
     STATE.selectedIds.clear();
     const toolbar = el("selection-toolbar");
     if(toolbar) toolbar.classList.toggle("hidden",!STATE.selectMode);
+    
+    // Reset selections on exit
     if(!STATE.selectMode) {
         document.querySelectorAll(".message.selected").forEach(m => m.classList.remove("selected"));
     }
+    
+    // Update count
     el("selection-count")&&(el("selection-count").innerText="0 Selected");
 }
 
@@ -280,7 +292,7 @@ function sendToolRequest(command) {
     setTimeout(() => {
         const inp = el("user-input");
         const btn = el("send-btn");
-        if(inp && btn) { inputBox.value=msg; btn.click(); }
+        if(inp && btn) { inp.value=msg; btn.click(); }
     }, 100);
 }
 
