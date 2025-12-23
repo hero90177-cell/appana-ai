@@ -1,19 +1,18 @@
-// chat-engine.js (vFinal - Robust & Connected)
+// chat-engine.js (vFinal - Fixed Connection & IDB)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
 
 const el = id => document.getElementById(id);
 
-// ✅ CONFIGURATION: Relative paths (Auto-detects backend)
+// ✅ AUTO-DETECT BACKEND URL
 const API_URL = "/api/ai-chat"; 
-const OCR_URL = ""; // Empty string = Relative to current domain
+const OCR_URL = ""; // Relative path automatically hits the same host
 
 let currentFile = null; 
 
-/* ---------------------- SETUP CHAT ---------------------- */
 export function setupChat() {
-    console.log("💬 Setting up Chat Engine...");
+    console.log("💬 Chat Engine Ready");
     loadChatHistory();
 
     const sendBtn = el("send-btn");
@@ -23,7 +22,6 @@ export function setupChat() {
     const voiceBtn = el("voice-btn");
 
     if (sendBtn) sendBtn.onclick = handleSend;
-    
     if (input) {
         input.addEventListener("keydown", e => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -32,25 +30,18 @@ export function setupChat() {
             }
         });
     }
-
     if (fileInput) fileInput.addEventListener("change", handleFileSelect);
     if (removeBtn) removeBtn.onclick = clearFile;
     if (voiceBtn) voiceBtn.onclick = handleVoice;
 }
 
-/* ---------------------- LOAD HISTORY ---------------------- */
 function loadChatHistory() {
     if (!STATE.chatHistory?.length) return;
     const chatBox = el("chat-box");
     if (!chatBox) return;
-    
-    chatBox.innerHTML = ""; // Clear welcome message
-    STATE.chatHistory.forEach(msg =>
-        appendMsg(msg.who, msg.text, msg.cls, msg.id, false)
-    );
+    chatBox.innerHTML = ""; 
+    STATE.chatHistory.forEach(msg => appendMsg(msg.who, msg.text, msg.cls, msg.id, false));
 }
-
-/* ---------------------- HANDLERS ---------------------- */
 
 function handleFileSelect(e) {
     if (e.target.files && e.target.files[0]) {
@@ -70,77 +61,54 @@ function clearFile() {
 
 function handleVoice() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Voice not supported. Try Chrome or Edge.");
-        return;
-    }
-
+    if (!SpeechRecognition) return alert("Voice not supported in this browser.");
+    
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
     recognition.interimResults = false;
-
+    
     const btn = el("voice-btn");
     btn.style.color = "#ef4444"; 
-
+    
     recognition.start();
-
+    
     recognition.onresult = (event) => {
         const txt = event.results[0][0].transcript;
         const input = el("user-input");
         if (input) input.value += (input.value ? " " : "") + txt;
         btn.style.color = ""; 
     };
-
-    recognition.onerror = (e) => {
-        console.warn("Voice Error:", e.error);
-        btn.style.color = "";
-    };
     recognition.onend = () => { btn.style.color = ""; };
 }
 
-/* ---------------------- SEND MESSAGE ---------------------- */
 async function handleSend() {
     const input = el("user-input");
     let txt = input.value.trim();
     
     if (!txt && !currentFile) return;
 
-    // --- COMMAND CHECK (Timers) ---
-    const lower = txt.toLowerCase().replace(/\s+/g, ' ').trim();
-
+    // --- TIMERS ---
+    const lower = txt.toLowerCase();
     if (lower === "stop" || lower.includes("stop timer")) {
         timer.stop();
         appendMsg("System", "⏹ Timer stopped.", "ai-message", "sys_" + Date.now());
-        input.value = "";
-        return;
+        input.value = ""; return;
     }
-
-    if (lower.includes("start stopwatch") || lower === "stopwatch") {
+    if (lower.includes("start stopwatch")) {
         timer.startStopwatch();
         appendMsg("System", "⏱ **Stopwatch Started!**", "ai-message", "sys_" + Date.now());
-        input.value = "";
-        return;
+        input.value = ""; return;
     }
 
-    if (lower.includes("timer") && /\d+/.test(lower)) {
-        const numMatch = lower.match(/(\d+)/);
-        const minutes = numMatch ? parseInt(numMatch[1]) : 25;
-        timer.startTimer(minutes * 60);
-        appendMsg("System", `⏳ **Timer Set:** ${minutes} mins.`, "ai-message", "sys_" + Date.now());
-        input.value = "";
-        return;
-    }
-
-    // --- CHAT LOGIC ---
     const id = "u_" + Date.now();
     const displayTxt = currentFile ? `[File: ${currentFile.name}] ${txt}` : txt;
     appendMsg("You", displayTxt, "user-message", id, true);
     input.value = ""; 
 
     const aiId = "a_" + Date.now();
-    appendMsg("🦅 Appana AI", "Thinking…", "ai-message", aiId, true);
+    appendMsg("🦅 Appana AI", "Thinking...", "ai-message", aiId, true);
 
-    // OCR PROCESSING
+    // --- OCR SCANNING ---
     if (currentFile) {
         const aiEl = el(aiId);
         if(aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong> 👁 Scanning document...`;
@@ -148,65 +116,45 @@ async function handleSend() {
         try {
             const formData = new FormData();
             formData.append('file', currentFile);
-            // ✅ Fix: Use relative URL
             const endpoint = currentFile.type === "application/pdf" ? "/ocr/pdf" : "/ocr/image";
             
-            const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData })
-                .catch(() => { throw new Error("Backend Offline"); });
-
+            const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData });
             if (!ocrResp.ok) throw new Error(`OCR Error: ${ocrResp.status}`);
             
             const ocrData = await ocrResp.json();
-            txt += `\n\n[CONTEXT FROM FILE]:\n${ocrData.text || ""}`;
+            txt += `\n\n[FILE CONTENT]:\n${ocrData.text}`;
             clearFile();
-            
         } catch (err) {
-            console.error("OCR Fail:", err);
-            txt += `\n(Note: File scan failed. ${err.message})`;
+            console.error(err);
+            txt += `\n(File scan failed: ${err.message})`;
             clearFile();
         }
     }
 
-    // GATHER CONTEXT
-    let context = "";
+    // --- GATHER CONTEXT (FIXED) ---
     let largeSubjectPayload = [];
     const sub = el("subject-selector")?.value;
-    
-    if (sub) {
-        if (sub.startsWith("custom_")) {
-            const s = STATE.customSubjects?.find(x => x.id === sub.split("_")[1]);
-            if (s) context = `\nContext:\n${s.content}`;
-        } else if (sub.startsWith("large_")) {
-            const subjectId = sub.split("_")[1];
-            try {
-                // Fetch from IndexedDB
-                const dbReq = indexedDB.open("appana_large_subjects", 1);
-                const largeSubContent = await new Promise((resolve) => {
-                    dbReq.onsuccess = (e) => {
-                        const db = e.target.result;
-                        if (!db.objectStoreNames.contains("subjects")) return resolve(null);
-                        const tx = db.transaction("subjects", "readonly");
-                        const req = tx.objectStore("subjects").get(subjectId);
-                        req.onsuccess = () => resolve(req.result);
-                        req.onerror = () => resolve(null);
-                    };
-                    dbReq.onerror = () => resolve(null);
-                });
+    let context = sub ? `\nSubject: ${sub}` : "";
 
-                if (largeSubContent) {
-                    largeSubjectPayload.push({
-                        name: largeSubContent.name,
-                        content: largeSubContent.content
-                    });
-                    context = `\n(Analyzing large subject: ${largeSubContent.name})`;
-                }
-            } catch (e) { console.error("IDB Error", e); }
-        } else {
-            context = `\nSubject Context: ${sub}`;
-        }
+    if (sub && sub.startsWith("large_")) {
+        const subjectId = sub.split("_")[1];
+        try {
+            // ✅ Fix: Properly await the DB result
+            const largeSubContent = await getLargeSubjectFromDB(subjectId);
+            if (largeSubContent) {
+                largeSubjectPayload.push({
+                    name: largeSubContent.name,
+                    content: largeSubContent.content
+                });
+                context += ` (Analyzed Large Subject: ${largeSubContent.name})`;
+            }
+        } catch (e) { console.error("IDB Error", e); }
+    } else if (sub && sub.startsWith("custom_")) {
+         const s = STATE.customSubjects?.find(x => x.id === sub.split("_")[1]);
+         if (s) context += `\nCustom Context: ${s.content}`;
     }
 
-    // SEND TO AI API
+    // --- API CALL ---
     try {
         const r = await fetch(API_URL, {
             method: "POST",
@@ -220,18 +168,17 @@ async function handleSend() {
         });
 
         const d = await r.json();
-        const reply = d.reply || "Error: No response from AI.";
+        const reply = d.reply || "Error: No response.";
 
         // Update UI
         const aiEl = el(aiId);
         if (aiEl) {
             const formatted = (typeof marked !== 'undefined' && marked.parse) 
-                ? marked.parse(reply) 
-                : reply.replace(/\n/g, "<br>");
+                ? marked.parse(reply) : reply.replace(/\n/g, "<br>");
             aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><div class="ai-text">${formatted}</div>`;
         }
 
-        // Save History
+        // Save
         const h = STATE.chatHistory.find(x => x.id === aiId);
         if (h) h.text = reply;
         saveData();
@@ -245,27 +192,37 @@ async function handleSend() {
     } catch (err) {
         console.error(err);
         const aiEl = el(aiId);
-        if (aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><br>⚠️ Network Error. Ensure backend is running.`;
+        if (aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><br>⚠️ Network Error. Is Python backend running?`;
     }
 }
 
-/* ---------------------- APPEND MESSAGE ---------------------- */
+// Helper to wrap IDB in Promise
+function getLargeSubjectFromDB(id) {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open("appana_large_subjects", 1);
+        req.onsuccess = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("subjects")) return resolve(null);
+            const tx = db.transaction("subjects", "readonly");
+            const getReq = tx.objectStore("subjects").get(id);
+            getReq.onsuccess = () => resolve(getReq.result);
+            getReq.onerror = () => resolve(null);
+        };
+        req.onerror = () => reject(req.error);
+    });
+}
+
 export function appendMsg(who, txt, cls, id, save = true) {
     const chatBox = el("chat-box");
     if (!chatBox) return;
-
     const d = document.createElement("div");
     d.className = `message ${cls}`;
     d.id = id;
-
     const displayTxt = (typeof marked !== 'undefined' && marked.parse && cls.includes('ai-message')) 
-        ? marked.parse(txt) 
-        : txt.replace(/\n/g, "<br>");
-
+        ? marked.parse(txt) : txt.replace(/\n/g, "<br>");
     d.innerHTML = `<strong>${who}:</strong> ${displayTxt}`;
     chatBox.appendChild(d);
     chatBox.scrollTop = chatBox.scrollHeight;
-
     if (save) {
         STATE.chatHistory.push({ id, who, text: txt, cls });
         saveData();
