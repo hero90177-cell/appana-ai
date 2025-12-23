@@ -1,7 +1,6 @@
-// ✅ Appana Service Worker v19 (FIXED BLACK SCREEN)
-// We changed v18 -> v19 to force your mobile to load the repaired CSS
+// ✅ Appana Service Worker v20 (Robust API/OCR Handling)
 
-const CACHE_NAME="appana-v19-offline-ready";
+const CACHE_NAME="appana-v20-offline-ready";
 
 const ASSETS=[
   "/", "/index.html", "/global.css", "/manifest.json", "/firebase-init.js",
@@ -20,7 +19,7 @@ const ASSETS=[
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
 
-  // Fonts / Icons
+  // Icons
   "https://cdn-icons-png.flaticon.com/512/809/809052.png",
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
 ];
@@ -40,14 +39,24 @@ self.addEventListener("activate",e=>{
 });
 
 self.addEventListener("fetch",e=>{
-    const url=new URL(e.request.url);
-    if((url.pathname.startsWith("/api/") || url.host.includes("firebase") || url.host.includes("googleapis.com")) &&
-        !url.pathname.endsWith(".js") && !url.pathname.endsWith(".css")) return;
+    const url = new URL(e.request.url);
 
+    // 🚨 CRITICAL FIX: Ignore API and OCR endpoints from cache
+    // This forces the browser to go to the network for these operations
+    if(url.pathname.startsWith("/api/") || url.pathname.startsWith("/ocr/")) {
+        return; 
+    }
+
+    if(url.host.includes("firebase") || url.host.includes("googleapis.com")) {
+        return;
+    }
+
+    // Default Cache Strategy for Static Files
     e.respondWith(
         caches.match(e.request).then(cached=>{
             if(cached) return cached;
             return fetch(e.request).then(response=>{
+                // Cache external assets (CDNs)
                 if(response.status===200 && (url.host.includes("cdn") || url.host.includes("gstatic") || url.pathname.endsWith(".png"))){
                     const clone=response.clone();
                     caches.open(CACHE_NAME).then(c=>c.put(e.request,clone));

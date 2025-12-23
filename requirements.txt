@@ -3,3 +3,5 @@ uvicorn
 pytesseract
 pillow
 pdfplumber
+python-multipart
+httpx

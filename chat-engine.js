@@ -5,9 +5,9 @@ import { STATE, saveData, timer } from './ui-manager.js';
 
 const el = id => document.getElementById(id);
 
-// ⚠️ CONFIGURATION: Change these if deploying!
-const API_URL = "/api/ai-chat"; // Points to Cloudflare Worker or Proxy
-const OCR_URL = "http://localhost:8000"; // Python Backend URL
+// ✅ CONFIGURATION: Relative paths (Auto-detects backend)
+const API_URL = "/api/ai-chat"; 
+const OCR_URL = ""; // Empty string = Relative to current domain
 
 let currentFile = null; 
 
@@ -69,7 +69,6 @@ function clearFile() {
 }
 
 function handleVoice() {
-    // Browser compatibility check
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         alert("Voice not supported. Try Chrome or Edge.");
@@ -81,7 +80,7 @@ function handleVoice() {
     recognition.interimResults = false;
 
     const btn = el("voice-btn");
-    btn.style.color = "#ef4444"; // Red indicating recording
+    btn.style.color = "#ef4444"; 
 
     recognition.start();
 
@@ -149,13 +148,13 @@ async function handleSend() {
         try {
             const formData = new FormData();
             formData.append('file', currentFile);
+            // ✅ Fix: Use relative URL
             const endpoint = currentFile.type === "application/pdf" ? "/ocr/pdf" : "/ocr/image";
             
-            // Attempt OCR Fetch
             const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData })
                 .catch(() => { throw new Error("Backend Offline"); });
 
-            if (!ocrResp.ok) throw new Error("OCR Service Error");
+            if (!ocrResp.ok) throw new Error(`OCR Error: ${ocrResp.status}`);
             
             const ocrData = await ocrResp.json();
             txt += `\n\n[CONTEXT FROM FILE]:\n${ocrData.text || ""}`;
@@ -163,7 +162,7 @@ async function handleSend() {
             
         } catch (err) {
             console.error("OCR Fail:", err);
-            txt += "\n(Note: File scan failed. Analyzing text only.)";
+            txt += `\n(Note: File scan failed. ${err.message})`;
             clearFile();
         }
     }
@@ -246,7 +245,7 @@ async function handleSend() {
     } catch (err) {
         console.error(err);
         const aiEl = el(aiId);
-        if (aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><br>⚠️ Network Error. Check connection or API URL.`;
+        if (aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><br>⚠️ Network Error. Ensure backend is running.`;
     }
 }
 
