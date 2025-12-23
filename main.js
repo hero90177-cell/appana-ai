@@ -1,10 +1,10 @@
-// main.js (vFixed for Motivation & Dots)
+// main.js (vFinal - Race Condition Fixed)
 import { loadComponents } from './loader.js';
 import { setupAuthListener } from './auth-manager.js';
 import { setupUI, loadLocalData, STATE } from './ui-manager.js';
 import { setupChat } from './chat-engine.js';
 
-// 1. INSTANT VISIBILITY
+// 1. Ensure Chat Panel is visible immediately (prevents black screen)
 const chatSection = document.getElementById("section-chat");
 if (chatSection) {
     chatSection.style.display = "flex"; 
@@ -15,89 +15,69 @@ async function initApp() {
     console.log("🦅 Appana AI Launching...");
 
     try {
+        // STEP 1: LOAD HTML (Wait here until finished!)
         await loadComponents();
-        console.log("✅ HTML Injected");
+        
+        // STEP 2: NOW it is safe to attach listeners
+        console.log("⚡ HTML Ready. Initializing Logic...");
+        
+        setupUI();           // Attach tool/menu buttons
+        loadLocalData();     // Load XP/History
+        setupChat();         // Attach Send/Mic/File buttons
+        setupAuthListener(); // Attach Login/Logout
+
+        // STEP 3: Visual Polish
+        tryLoadMotivation();
+        startSystemHeartbeat();
+        enableMessageSelection();
+
+        console.log("✅ All Systems Go");
+
     } catch (err) {
-        console.error("HTML Error:", err);
+        console.error("🔥 Critical Init Error:", err);
+        alert("App failed to load. Please refresh.");
     }
 
-    // Wait slightly for DOM to settle
-    setTimeout(() => {
-        try {
-            // A. Start Features
-            setupUI();
-            loadLocalData();
-            setupChat();
-            setupAuthListener();
-            
-            // B. Fix Motivation Text (Robust Load)
-            tryLoadMotivation(0);
-            
-            // C. Start Heartbeat (Green/White Dots)
-            startSystemHeartbeat();
-
-            // D. Fix Selection Click Logic
-            enableMessageSelection();
-
-            console.log("✅ All Systems Go");
-        } catch (e) {
-            console.error("Init Error:", e);
-        }
-    }, 300); // Increased slightly to 300ms for safety
-
+    // Register Service Worker for Offline Mode
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(() => console.log("📡 Service Worker Registered"))
+            .catch(e => console.warn("Service Worker Failed:", e));
     }
 }
 
-/* --- FEATURE: DAILY MOTIVATION (With Retry) --- */
-function tryLoadMotivation(attempts) {
+/* --- FEATURE: DAILY MOTIVATION --- */
+function tryLoadMotivation() {
     const el = document.getElementById("sticky-motivation");
     const el2 = document.getElementById("sidebar-motivation-text");
-
-    if (el || el2) {
-        const quotes = [
-            "Small steps every day lead to big results! 🚀",
-            "Believe you can and you're halfway there. ⭐",
-            "Your future is created by what you do today. 🔥",
-            "Don't stop until you're proud. 🦅",
-            "Focus on the goal, not the obstacles. 🎯",
-            "Dream big, work hard, stay focused. 💡"
-        ];
-        const q = quotes[Math.floor(Math.random() * quotes.length)];
-        
-        if(el) el.innerHTML = `✨ ${q}`;
-        if(el2) el2.innerText = q;
-    } else {
-        // If elements not found yet, retry a few times
-        if (attempts < 5) {
-            setTimeout(() => tryLoadMotivation(attempts + 1), 500);
-        }
-    }
+    
+    const quotes = [
+        "Small steps every day lead to big results! 🚀",
+        "Believe you can and you're halfway there. ⭐",
+        "Your future is created by what you do today. 🔥",
+        "Don't stop until you're proud. 🦅",
+        "Focus on the goal, not the obstacles. 🎯",
+        "Dream big, work hard, stay focused. 💡"
+    ];
+    const q = quotes[Math.floor(Math.random() * quotes.length)];
+    
+    if(el) el.innerHTML = `✨ ${q}`;
+    if(el2) el2.innerText = q;
 }
 
 /* --- FEATURE: GREEN DOTS HEARTBEAT --- */
 function startSystemHeartbeat() {
     setInterval(() => {
-        // 1. Check Internet (NET Dot)
+        // NET Dot
         const netDot = document.getElementById("net-status");
         if(netDot) {
-            if(navigator.onLine) {
-                netDot.classList.add("active"); // Green
-            } else {
-                netDot.classList.remove("active"); // White (via CSS opacity)
-            }
+            netDot.classList.toggle("active", navigator.onLine);
         }
         
-        // 2. Check AI (AI Dot) - Simulate connection
+        // AI Dot (Simulated connection check)
         const aiDot = document.getElementById("api-status");
         if(aiDot) {
-            // If online, assume AI is ready (Green)
-            if(navigator.onLine) {
-                aiDot.classList.add("active");
-            } else {
-                aiDot.classList.remove("active");
-            }
+            aiDot.classList.toggle("active", navigator.onLine);
         }
     }, 2000);
 }
@@ -108,20 +88,17 @@ function enableMessageSelection() {
     if(!box) return;
     
     box.addEventListener("click", (e) => {
-        // ✅ Check if Select Mode is ON in UI Manager
         if(STATE && STATE.selectMode) {
             const msgDiv = e.target.closest(".message");
             if(msgDiv) {
                 msgDiv.classList.toggle("selected");
                 
-                // ✅ SYNC WITH STATE (Crucial for Delete)
                 if(msgDiv.classList.contains("selected")) {
                     STATE.selectedIds.add(msgDiv.id);
                 } else {
                     STATE.selectedIds.delete(msgDiv.id);
                 }
                 
-                // Update counter
                 const count = STATE.selectedIds.size;
                 const countLabel = document.getElementById("selection-count");
                 if(countLabel) countLabel.innerText = `${count} Selected`;
@@ -130,4 +107,5 @@ function enableMessageSelection() {
     });
 }
 
+// Start the App
 initApp();
