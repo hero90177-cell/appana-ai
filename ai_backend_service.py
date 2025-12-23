@@ -1,37 +1,36 @@
 # ai_backend_service.py
-# Appana AI – Final Unified Server (vFixed & Merged)
+# Appana AI – Final Unified Server (vFinal)
+# Integrates OCR, AI Chat, Memory, and Advanced Prompts
 # Run with: python ai_backend_service.py
-# IMPORTANT: Ensure 'python-multipart' is installed for File Uploads.
 
-from fastapi import FastAPI, UploadFile, File, Request, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 import pytesseract
 import pdfplumber
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 import uvicorn
 import os
 import httpx
-import time
-from collections import defaultdict
+import json
 
 app = FastAPI()
 
 # ---------------------------------------------------------
-# 1. CONFIGURATION & STATE
+# 1. CONFIGURATION
 # ---------------------------------------------------------
 
-# API Keys (Set these in your OS Environment or .env file)
+# Set your keys here or in system environment variables
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "") 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
 HF_API_KEY = os.getenv("HF_API_KEY", "")
 
-# In-Memory Storage
-CHAT_MEMORY = {}        # Stores chat context per User ID
-RATE_LIMITS = defaultdict(list) # Stores timestamp of requests per User ID
+# Simple In-Memory Storage for Chat History (Replaces Cloudflare KV)
+# Note: This clears when you restart the server.
+CHAT_MEMORY = {} 
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,19 +42,8 @@ app.add_middleware(
 OCR_LANGS = "eng+hin"
 
 # ---------------------------------------------------------
-# 2. HELPER FUNCTIONS
+# 2. OCR HELPERS
 # ---------------------------------------------------------
-
-def check_rate_limit(uid: str):
-    if uid == "guest": return # Guests might share IP, so lenient
-    now = time.time()
-    # Remove requests older than 60 seconds
-    RATE_LIMITS[uid] = [t for t in RATE_LIMITS[uid] if now - t < 60]
-    
-    if len(RATE_LIMITS[uid]) >= 20: # Limit: 20 requests per minute
-        raise HTTPException(status_code=429, detail="⚠️ You are chatting too fast. Please wait.")
-    
-    RATE_LIMITS[uid].append(now)
 
 def process_image_for_ocr(image):
     # Grayscale & Upscale for better accuracy
@@ -92,17 +80,17 @@ async def ocr_pdf(file: UploadFile = File(...)):
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
             for i, page in enumerate(pdf.pages):
                 # Try text extraction first
-                page_text = page.extract_text() or ""
-                if len(page_text.strip()) > 5:
+                page_text = page.extract_text()
+                if page_text and len(page_text.strip()) > 5:
                     full_text += page_text + "\n"
                 else:
-                    # Fallback to OCR if text extraction fails
+                    # Fallback to OCR
                     try:
                         im = page.to_image(resolution=300).original
                         processed = process_image_for_ocr(im)
                         ocr_text = pytesseract.image_to_string(processed, lang=OCR_LANGS)
                         full_text += ocr_text + "\n"
-                    except Exception:
+                    except Exception as ocr_err:
                         full_text += f"[Page {i+1}: Image Scan Failed]\n"
 
         return {"status": "success", "text": full_text if full_text.strip() else "(No text found)"}
@@ -112,7 +100,7 @@ async def ocr_pdf(file: UploadFile = File(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ---------------------------------------------------------
-# 4. AI CHAT ENDPOINT (Merged Logic)
+# 4. AI CHAT ENDPOINT (Restored Logic from JS)
 # ---------------------------------------------------------
 
 @app.post("/api/ai-chat")
@@ -120,17 +108,9 @@ async def ai_chat_endpoint(request: Request):
     try:
         body = await request.json()
         
-        # 1. Health Ping
+        # 1. Ping Check
         if body.get("type") == "ping":
-            return {
-                "status": "ok", 
-                "backend": "python-unified", 
-                "keys": {
-                    "gemini": bool(GEMINI_API_KEY),
-                    "groq": bool(GROQ_API_KEY),
-                    "cohere": bool(COHERE_API_KEY)
-                }
-            }
+            return {"status": "ok", "backend": "python-unified"}
 
         # 2. Extract Data
         message = body.get("message", "")
@@ -141,15 +121,12 @@ async def ai_chat_endpoint(request: Request):
         goal = body.get("goal", "")
 
         if not message:
-            return {"reply": "Please say something!"}
+            raise HTTPException(status_code=400, detail="No message provided")
 
-        # 3. Rate Limit Check
-        check_rate_limit(uid)
-
-        # 4. Retrieve Memory
+        # 3. Retrieve Memory
         previous_context = CHAT_MEMORY.get(uid, "")
 
-        # 5. Build Professional System Prompt (Merged from ai-chat.js)
+        # 4. Build Professional System Prompt (From your JS file)
         tone = "friendly, encouraging, exam-focused mentor"
         format_req = "clear and concise bullet points"
 
@@ -176,37 +153,35 @@ Context History:
 
 Instructions:
 1. Use provided Context/Large Subjects automatically.
-2. Be Indian syllabus aware (CBSE / ICSE / State Boards).
+2. Be Indian syllabus aware (CBSE/ICSE/State Boards).
 3. Keep explanations clear, accurate, and exam-relevant.
-4. Use emojis sparingly and professionally (max one per response).
+4. Use emojis sparingly (max one per response).
 5. Analyze any provided file text first.
-6. If the user asks for "Notes", "Quiz", or "Important Questions", format appropriately.
 """
         full_prompt = f"{system_prompt}\n\nStudent: {message}"
 
-        # 6. Inject Large Subjects
+        # 5. Inject Large Subjects (Restored Feature)
         if "largeSubjects" in body and isinstance(body["largeSubjects"], list):
-            extra = "\n\n".join([f"[{s['name']}]\n{s['content'][:15000]}" for s in body["largeSubjects"]]) # Truncate massive files
+            extra = "\n\n".join([f"[{s['name']}]\n{s['content']}" for s in body["largeSubjects"]])
             full_prompt += f"\n\n[LARGE SUBJECT CONTEXT]:\n{extra}"
 
         reply = None
 
-        # 7. Call AI Providers (Cascade Strategy)
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        # 6. Call AI Providers (Gemini -> Groq -> Cohere -> HF)
+        async with httpx.AsyncClient(timeout=40.0) as client:
             
-            # --- GEMINI (Primary) ---
+            # --- GEMINI ---
             if not reply and GEMINI_API_KEY:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
                     payload = {"contents": [{"parts": [{"text": full_prompt}]}]}
                     r = await client.post(url, json=payload)
-                    if r.status_code == 200:
-                        data = r.json()
-                        reply = data['candidates'][0]['content']['parts'][0]['text']
+                    data = r.json()
+                    reply = data['candidates'][0]['content']['parts'][0]['text']
                 except Exception as e:
                     print(f"Gemini Error: {e}")
 
-            # --- GROQ (Secondary) ---
+            # --- GROQ ---
             if not reply and GROQ_API_KEY:
                 try:
                     url = "https://api.groq.com/openai/v1/chat/completions"
@@ -216,13 +191,12 @@ Instructions:
                         "messages": [{"role": "user", "content": full_prompt}]
                     }
                     r = await client.post(url, json=payload, headers=headers)
-                    if r.status_code == 200:
-                        data = r.json()
-                        reply = data['choices'][0]['message']['content']
+                    data = r.json()
+                    reply = data['choices'][0]['message']['content']
                 except Exception as e:
                     print(f"Groq Error: {e}")
 
-            # --- COHERE (Fallback) ---
+            # --- COHERE ---
             if not reply and COHERE_API_KEY:
                 try:
                     url = "https://api.cohere.ai/v1/chat"
@@ -232,27 +206,27 @@ Instructions:
                     }
                     payload = {"model": "command-r-plus", "message": full_prompt}
                     r = await client.post(url, json=payload, headers=headers)
-                    if r.status_code == 200:
-                        data = r.json()
-                        reply = data['text']
+                    data = r.json()
+                    reply = data['text']
                 except Exception as e:
                     print(f"Cohere Error: {e}")
 
         if not reply:
-            return {"reply": "⚠️ All AI providers failed. Please check your API Keys or internet connection."}
+            return {"reply": "⚠️ All AI providers failed. Check your API Keys."}
 
-        # 8. Post-Processing & Memory Update
+        # 7. Post-Processing & Memory Update
+        # Add a relevant emoji if not in strict mode
         if examMode not in ["teacher", "2marks", "5marks", "8marks"]:
             lower = reply.lower()
             emoji = ""
             if "important" in lower: emoji = "📌"
             elif "remember" in lower: emoji = "💡"
             elif "excellent" in lower: emoji = "✅"
-            if emoji and emoji not in reply: reply = f"{emoji} {reply}"
+            if emoji: reply = f"{emoji} {reply}"
 
-        # Save to Memory (Sliding Window ~2000 chars)
+        # Save to Memory (Keep last 2000 chars)
         new_mem = f"{previous_context}\nQ: {message}\nA: {reply}"
-        if len(new_mem) > 2500: new_mem = new_mem[-2500:]
+        if len(new_mem) > 2000: new_mem = new_mem[-2000:]
         CHAT_MEMORY[uid] = new_mem
 
         return {"reply": reply}
@@ -264,7 +238,9 @@ Instructions:
 # ---------------------------------------------------------
 # 5. STATIC FILES (MUST BE LAST)
 # ---------------------------------------------------------
+# This serves index.html and other files from the current folder
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
+    # Host 0.0.0.0 allows mobile access
     uvicorn.run(app, host="0.0.0.0", port=8000)
