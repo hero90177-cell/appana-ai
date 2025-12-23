@@ -7,7 +7,7 @@ const el = id => document.getElementById(id);
 
 // ✅ AUTO-DETECT BACKEND URL
 const API_URL = "/api/ai-chat"; 
-const OCR_URL = ""; // Relative path automatically hits the same host
+const OCR_URL = ""; 
 
 let currentFile = null; 
 
@@ -131,7 +131,7 @@ async function handleSend() {
         }
     }
 
-    // --- GATHER CONTEXT (FIXED) ---
+    // --- GATHER CONTEXT ---
     let largeSubjectPayload = [];
     const sub = el("subject-selector")?.value;
     let context = sub ? `\nSubject: ${sub}` : "";
@@ -139,7 +139,6 @@ async function handleSend() {
     if (sub && sub.startsWith("large_")) {
         const subjectId = sub.split("_")[1];
         try {
-            // ✅ Fix: Properly await the DB result
             const largeSubContent = await getLargeSubjectFromDB(subjectId);
             if (largeSubContent) {
                 largeSubjectPayload.push({

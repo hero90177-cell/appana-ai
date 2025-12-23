@@ -1,7 +1,7 @@
 # ai_backend_service.py
 # Appana AI – Final Unified Server (vFixed & Merged)
-# Integrates OCR, AI Chat, Rate Limiting, and Advanced Prompts
 # Run with: python ai_backend_service.py
+# IMPORTANT: Ensure 'python-multipart' is installed for File Uploads.
 
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
