@@ -1,7 +1,8 @@
-// chat-engine.js (vFinal - Hybrid Auto OCR)
+// chat-engine.js (vFinal - Hybrid Auto OCR + Voice Edition)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
+import { speakAI, stopSpeaking } from './voice-engine.js'; // ✅ NEW: Voice Import
 
 const el = id => document.getElementById(id);
 
@@ -210,6 +211,7 @@ async function handleSend() {
 
     if (lower === "stop" || lower.includes("stop timer")) {
         timer.stop();
+        stopSpeaking(); // ✅ NEW: Stop Voice when timer stops
         appendMsg("System", "⏹ Timer stopped.", "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
@@ -310,6 +312,8 @@ async function handleSend() {
                 ? marked.parse(reply) 
                 : reply.replace(/\n/g, "<br>");
             aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><div class="ai-text">${formatted}</div>`;
+            
+            speakAI(reply); // ✅ NEW: Auto Speak AI Reply
         }
 
         const h = STATE.chatHistory.find(x => x.id === aiId);
