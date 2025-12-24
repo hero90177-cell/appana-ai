@@ -1,6 +1,6 @@
 # ai_backend_service.py
-# Appana AI – Final Unified Server (vFinal)
-# Integrates OCR, AI Chat, Memory, and Advanced Prompts
+# Appana AI – Final Unified Server (vSKT-Ultimate)
+# Integrates: OCR (Tesseract/PDF), Multi-AI Fallback (Gemini/Groq/Cohere/HF), Memory, SKT Motivation Engine
 # Run with: python ai_backend_service.py
 
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
@@ -15,6 +15,9 @@ import uvicorn
 import os
 import httpx
 import json
+import re
+import random
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -28,9 +31,9 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
 HF_API_KEY = os.getenv("HF_API_KEY", "")
 
-# Simple In-Memory Storage for Chat History (Replaces Cloudflare KV)
-# Note: This clears when you restart the server.
+# Storage
 CHAT_MEMORY = {} 
+STREAK_DB = {} # Stores {uid: {"last_seen": "YYYY-MM-DD", "streak": 0}}
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,7 +45,86 @@ app.add_middleware(
 OCR_LANGS = "eng+hin"
 
 # ---------------------------------------------------------
-# 2. OCR HELPERS
+# 2. SKT & MOTIVATION HELPERS
+# ---------------------------------------------------------
+
+def get_skt_music_hint(mood="focus"):
+    tracks = [
+        "🎵 [Background Music: 'Unstoppable' - High Energy Instrumental]",
+        "🎵 [Background Music: 'Lakshya' Title Track - Motivational Lo-Fi]",
+        "🎵 [Background Music: Epic Orchestral - Battle Mode]",
+        "🎵 [Background Music: 'Aarambh Hai Prachand' - Intense Focus]"
+    ]
+    if mood == "exam":
+        return "🎵 [Background Music: 40Hz Binaural Beats for Deep Focus]"
+    return random.choice(tracks)
+
+def check_and_update_streak(uid):
+    if uid == "guest": return None
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    user_data = STREAK_DB.get(uid, {"last_seen": "", "streak": 0})
+    
+    msg = None
+    if user_data["last_seen"] == today:
+        pass # Already studied today
+    elif user_data["last_seen"] == yesterday:
+        user_data["streak"] += 1
+        msg = f"🔥 **{user_data['streak']} Day Streak!** You are UNSTOPPABLE! Keep grinding!"
+    else:
+        user_data["streak"] = 1
+        msg = "🚀 **Day 1.** A new beginning. Let's build a legacy starting NOW!"
+        
+    user_data["last_seen"] = today
+    STREAK_DB[uid] = user_data
+    return msg
+
+def apply_smart_emojis(text, exam_mode):
+    """
+    Injects emojis based on visual observation keywords but respects exam limits.
+    """
+    # 1. Define Limits
+    max_emojis = 4
+    if exam_mode == "2marks": max_emojis = 1
+    elif exam_mode == "5marks": max_emojis = 3
+    elif exam_mode == "8marks": max_emojis = 5
+    elif exam_mode == "teacher": return text # Strict teacher = No emojis
+
+    # 2. Keyword Map (Visual Observation)
+    keyword_map = {
+        r"\b(secure|security|safe)\b": "🛡️",
+        r"\b(fast|quick|speed)\b": "⚡",
+        r"\b(money|free|cost|price)\b": "💸",
+        r"\b(growth|scale|increase)\b": "📈",
+        r"\b(smart|brain|intelligent)\b": "🧠",
+        r"\b(important|note|key)\b": "📌",
+        r"\b(success|win|goal)\b": "🏆",
+        r"\b(focus|concentrate)\b": "🎯",
+        r"\b(idea|concept)\b": "💡"
+    }
+
+    # 3. Injection Logic
+    lines = text.split('\n')
+    new_lines = []
+    emojis_used = 0
+
+    for line in lines:
+        if emojis_used < max_emojis:
+            for pattern, icon in keyword_map.items():
+                if re.search(pattern, line, re.IGNORECASE) and emojis_used < max_emojis:
+                    # Don't add if line already has an emoji
+                    if not any(char in line for char in ["🛡️","⚡","💸","📈","🧠","📌","🏆","🎯","💡"]):
+                        line = f"{icon} {line}"
+                        emojis_used += 1
+                        break 
+        new_lines.append(line)
+
+    return "\n".join(new_lines)
+
+# ---------------------------------------------------------
+# 3. OCR ENDPOINTS
 # ---------------------------------------------------------
 
 def process_image_for_ocr(image):
@@ -50,10 +132,6 @@ def process_image_for_ocr(image):
     img = image.convert("L")
     img = img.resize((int(img.width * 2), int(img.height * 2)), Image.Resampling.LANCZOS)
     return img
-
-# ---------------------------------------------------------
-# 3. OCR ENDPOINTS
-# ---------------------------------------------------------
 
 @app.post("/ocr/image")
 async def ocr_image(file: UploadFile = File(...)):
@@ -100,7 +178,7 @@ async def ocr_pdf(file: UploadFile = File(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ---------------------------------------------------------
-# 4. AI CHAT ENDPOINT (Restored Logic from JS)
+# 4. AI CHAT ENDPOINT
 # ---------------------------------------------------------
 
 @app.post("/api/ai-chat")
@@ -110,7 +188,7 @@ async def ai_chat_endpoint(request: Request):
         
         # 1. Ping Check
         if body.get("type") == "ping":
-            return {"status": "ok", "backend": "python-unified"}
+            return {"status": "ok", "backend": "python-unified-skt"}
 
         # 2. Extract Data
         message = body.get("message", "")
@@ -123,15 +201,26 @@ async def ai_chat_endpoint(request: Request):
         if not message:
             raise HTTPException(status_code=400, detail="No message provided")
 
+        # --- NEW: Psychology Check (Stress Detection) ---
+        is_stressed = bool(re.search(r"(scared|fear|can't do it|fail|tired|giving up)", message, re.IGNORECASE))
+        mood = "calm" if is_stressed else "push"
+
+        # --- NEW: Streak Check ---
+        streak_msg = check_and_update_streak(uid)
+
         # 3. Retrieve Memory
         previous_context = CHAT_MEMORY.get(uid, "")
 
-        # 4. Build Professional System Prompt
-        tone = "friendly, encouraging, exam-focused mentor"
-        format_req = "clear and concise bullet points"
+        # 4. Build Professional + SKT Persona System Prompt
+        base_persona = "You are Shashish Kumar Tiwari (SKT), the World's #1 Youth Motivator and Educator."
+        format_req = "Use bullet points for visual clarity."
+        style_instruction = "Be HIGH ENERGY. Use punchy sentences. Blend English and Hinglish."
 
         if examMode == "teacher": 
-            tone = "strict, formal, precise Indian syllabus teacher"
+            base_persona = "You are a strict, formal Indian syllabus teacher."
+            style_instruction = "No motivation, just facts. Precise definitions."
+        elif mood == "calm":
+            style_instruction = "The student is stressed. Be a calming big brother. Say 'Relax, I am with you'."
         elif examMode == "2marks": 
             format_req = "2–3 sentences, exam-oriented, precise"
         elif examMode == "5marks": 
@@ -140,8 +229,8 @@ async def ai_chat_endpoint(request: Request):
             format_req = "detailed essay with introduction, body, and conclusion"
 
         system_prompt = f"""
-You are Appana AI.
-Role: {tone}
+{base_persona}
+Role Mode: {style_instruction}
 Subject: {subject}
 Language: {language}
 Exam Mode: {examMode}
@@ -151,11 +240,11 @@ Format Requirement: {format_req}
 Context History:
 {previous_context}
 
-Instructions:
+Directives:
 1. Use provided Context/Large Subjects automatically.
 2. Be Indian syllabus aware (CBSE/ICSE/State Boards).
-3. Keep explanations clear, accurate, and exam-relevant.
-4. Use emojis sparingly (max one per response).
+3. If the user is lazy, ROAST them politely but firmly (SKT Style).
+4. DO NOT overuse emojis in the core explanation, keep them for headings.
 5. Analyze any provided file text first.
 """
         full_prompt = f"{system_prompt}\n\nStudent: {message}"
@@ -211,17 +300,46 @@ Instructions:
                 except Exception as e:
                     print(f"Cohere Error: {e}")
 
+            # --- HUGGING FACE ---
+            if not reply and HF_API_KEY:
+                try:
+                    url = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3"
+                    headers = {
+                        "Authorization": f"Bearer {HF_API_KEY}",
+                        "Content-Type": "application/json"
+                    }
+                    payload = {"inputs": f"<s>[INST] {full_prompt} [/INST]"}
+                    r = await client.post(url, json=payload, headers=headers)
+                    data = r.json()
+                    # HF can return list or dict
+                    if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
+                        reply = data[0]["generated_text"]
+                    elif isinstance(data, dict) and "generated_text" in data:
+                        reply = data["generated_text"]
+                except Exception as e:
+                    print(f"Hugging Face Error: {e}")
+
         if not reply:
             return {"reply": "⚠️ All AI providers failed. Check your API Keys."}
 
         # 7. Post-Processing & Memory Update
-        if examMode not in ["teacher", "2marks", "5marks", "8marks"]:
-            lower = reply.lower()
-            emoji = ""
-            if "important" in lower: emoji = "📌"
-            elif "remember" in lower: emoji = "💡"
-            elif "excellent" in lower: emoji = "✅"
-            if emoji: reply = f"{emoji} {reply}"
+        
+        # A. Apply Smart Emojis
+        reply = apply_smart_emojis(reply, examMode)
+
+        # B. Append Streak Message
+        if streak_msg:
+            reply = f"{streak_msg}\n\n{reply}"
+
+        # C. Append Music Hint (Text Only)
+        if examMode != "teacher":
+            music = get_skt_music_hint("exam" if "exam" in message.lower() else "focus")
+            reply += f"\n\n_{music}_"
+
+        # D. 6 AM Discipline Check
+        current_hour = datetime.now().hour
+        if 4 <= current_hour <= 7:
+            reply = "🌅 **Early Bird Special!** Those who wake up early, rule the world.\n\n" + reply
 
         # Save to Memory (Keep last 2000 chars)
         new_mem = f"{previous_context}\nQ: {message}\nA: {reply}"
