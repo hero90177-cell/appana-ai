@@ -1,12 +1,12 @@
-// chat-engine.js (vFinal - Hybrid Auto OCR + Voice Edition)
+// chat-engine.js (vFinal - Hybrid Auto OCR + Mentor Voice Edition)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
-import { speakAI, stopSpeaking } from './voice-engine.js'; // ✅ NEW: Voice Import
+import { speakAI, stopSpeaking } from './voice-engine.js'; // ✅ Voice Engine Connected
 
 const el = id => document.getElementById(id);
 
-// ⚠️ BACKEND CONFIGURATION (Kept as Fallback)
+// ⚠️ BACKEND CONFIGURATION
 const OCR_URL = "https://appana-ai-backend.onrender.com"; 
 const API_URL = "/api/ai-chat"; 
 
@@ -56,6 +56,7 @@ function loadChatHistory() {
 
 function handleFileSelect(e) {
     if (e.target.files && e.target.files[0]) {
+        stopSpeaking(); // ✅ Stop AI voice if user uploads file
         currentFile = e.target.files[0];
         scannedText = ""; 
         
@@ -103,7 +104,7 @@ async function performHybridAutoOCR() {
         
         // STEP 2: Fallback to Render Server (Powerful, Handles Hindi/Scans)
         if(statusEl) {
-            statusEl.innerText = "☁️ Server Scanning..."; // Let user know it might take a moment
+            statusEl.innerText = "☁️ Server Scanning..."; 
         }
         await performServerOCR(); 
     }
@@ -112,9 +113,7 @@ async function performHybridAutoOCR() {
 // 📱 Local Image OCR (Tesseract.js)
 async function performLocalImageOCR(file) {
     if (!window.Tesseract) throw new Error("Tesseract not loaded");
-    const { data } = await window.Tesseract.recognize(file, 'eng+hin', { 
-        logger: m => console.log(m) 
-    });
+    const { data } = await window.Tesseract.recognize(file, 'eng+hin');
     return data.text;
 }
 
@@ -166,6 +165,7 @@ async function performServerOCR() {
 }
 
 function clearFile() {
+    stopSpeaking(); // ✅ Silence AI on file clear
     currentFile = null;
     scannedText = "";
     el("file-upload").value = "";
@@ -173,6 +173,8 @@ function clearFile() {
 }
 
 function handleVoice() {
+    stopSpeaking(); // ✅ CRITICAL: Stop AI from talking while user tries to speak
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         alert("Voice not supported. Try Chrome.");
@@ -211,8 +213,8 @@ async function handleSend() {
 
     if (lower === "stop" || lower.includes("stop timer")) {
         timer.stop();
-        stopSpeaking(); // ✅ NEW: Stop Voice when timer stops
-        appendMsg("System", "⏹ Timer stopped.", "ai-message", "sys_" + Date.now());
+        stopSpeaking(); // ✅ Stop Voice when timer stops
+        appendMsg("System", "⏹ Timer & Voice stopped.", "ai-message", "sys_" + Date.now());
         input.value = "";
         return;
     }
@@ -313,7 +315,7 @@ async function handleSend() {
                 : reply.replace(/\n/g, "<br>");
             aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><div class="ai-text">${formatted}</div>`;
             
-            speakAI(reply); // ✅ NEW: Auto Speak AI Reply
+            speakAI(reply); // ✅ Auto Speak AI Reply
         }
 
         const h = STATE.chatHistory.find(x => x.id === aiId);
