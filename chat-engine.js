@@ -1,4 +1,4 @@
-// chat-engine.js (vFinal - Robust & Connected)
+// chat-engine.js (vFinal - Robust & Connected - Auto OCR Enhanced)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
@@ -10,6 +10,7 @@ const API_URL = "/api/ai-chat"; // Points to Cloudflare Worker or Proxy
 const OCR_URL = "http://localhost:8000"; // Python Backend URL
 
 let currentFile = null; 
+let scannedText = ""; // New: Stores text immediately after selection
 
 /* ---------------------- SETUP CHAT ---------------------- */
 export function setupChat() {
@@ -55,15 +56,65 @@ function loadChatHistory() {
 function handleFileSelect(e) {
     if (e.target.files && e.target.files[0]) {
         currentFile = e.target.files[0];
+        scannedText = ""; // Reset previous scan result
+        
         el("file-preview").classList.remove("hidden");
         el("file-name").innerText = currentFile.name;
-        el("ocr-status").innerText = "Ready to scan";
-        el("ocr-status").style.color = "#fbbf24";
+        
+        // IMMEDIATE ACTION: Trigger Auto Scan
+        performAutoOCR(); 
+    }
+}
+
+// New Function: Runs automatically when file is selected
+async function performAutoOCR() {
+    if (!currentFile) return;
+
+    const statusEl = el("ocr-status");
+    if(statusEl) {
+        statusEl.innerText = "Scanning...";
+        statusEl.style.color = "#fbbf24"; // Yellow
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        const endpoint = currentFile.type === "application/pdf" ? "/ocr/pdf" : "/ocr/image";
+        
+        // Attempt OCR Fetch immediately
+        const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData })
+            .catch(() => { throw new Error("Backend Offline"); });
+
+        if (!ocrResp.ok) throw new Error("OCR Service Error");
+        
+        const ocrData = await ocrResp.json();
+        
+        // Store result in global variable for handleSend to use later
+        scannedText = ocrData.text || ""; 
+
+        if(statusEl) {
+            if(scannedText) {
+                statusEl.innerText = "✓ Scanned";
+                statusEl.style.color = "#22c55e"; // Green
+            } else {
+                statusEl.innerText = "⚠ No Text Found";
+                statusEl.style.color = "#fbbf24"; 
+            }
+        }
+        
+    } catch (err) {
+        console.error("Auto OCR Fail:", err);
+        scannedText = ""; // Ensure empty on failure
+        if(statusEl) {
+            statusEl.innerText = "⚠ Scan Failed";
+            statusEl.style.color = "#ef4444"; // Red
+        }
     }
 }
 
 function clearFile() {
     currentFile = null;
+    scannedText = "";
     el("file-upload").value = "";
     el("file-preview").classList.add("hidden");
 }
@@ -141,31 +192,15 @@ async function handleSend() {
     const aiId = "a_" + Date.now();
     appendMsg("🦅 Appana AI", "Thinking…", "ai-message", aiId, true);
 
-    // OCR PROCESSING
+    // ATTACH SCANNED CONTEXT (Instant, no waiting)
     if (currentFile) {
-        const aiEl = el(aiId);
-        if(aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong> 👁 Scanning document...`;
-        
-        try {
-            const formData = new FormData();
-            formData.append('file', currentFile);
-            const endpoint = currentFile.type === "application/pdf" ? "/ocr/pdf" : "/ocr/image";
-            
-            // Attempt OCR Fetch
-            const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData })
-                .catch(() => { throw new Error("Backend Offline"); });
-
-            if (!ocrResp.ok) throw new Error("OCR Service Error");
-            
-            const ocrData = await ocrResp.json();
-            txt += `\n\n[CONTEXT FROM FILE]:\n${ocrData.text || ""}`;
-            clearFile();
-            
-        } catch (err) {
-            console.error("OCR Fail:", err);
-            txt += "\n(Note: File scan failed. Analyzing text only.)";
-            clearFile();
+        if (scannedText) {
+             txt += `\n\n[CONTEXT FROM FILE]:\n${scannedText}`;
+        } else {
+             // If scan failed or wasn't ready, we just note the file name
+             txt += `\n\n(Note: File '${currentFile.name}' attached. Text scan was not available or failed.)`;
         }
+        clearFile();
     }
 
     // GATHER CONTEXT
