@@ -1,4 +1,4 @@
-// ai-chat.js (v2.1 FINAL – Professional & Exam-Ready)
+// ai-chat.js (v2.1 FINAL – SKT Edition & Exam-Ready)
 
 export async function onRequestPost({ request, env }) {
   const cors = {
@@ -22,7 +22,7 @@ export async function onRequestPost({ request, env }) {
       };
       const ok = Object.values(keys).some(Boolean);
       return new Response(
-        JSON.stringify({ status: ok ? "ok" : "fail", keys_detected: keys }),
+        JSON.stringify({ status: ok ? "ok" : "fail", mode: "SKT-Engine", keys_detected: keys }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
@@ -43,7 +43,7 @@ export async function onRequestPost({ request, env }) {
     if (!message && !image) throw new Error("No input provided");
 
     /* ===============================
-       3️⃣ RATE LIMIT (KV)
+       3️⃣ RATE LIMIT (KV) - PRESERVED
        =============================== */
     if (env.APPANA_KV) {
       const rateKey = `rate:${uid}`;
@@ -58,32 +58,65 @@ export async function onRequestPost({ request, env }) {
     }
 
     /* ===============================
-       4️⃣ SMART CONTEXT (MEMORY)
+       4️⃣ SMART CONTEXT (MEMORY) & STREAK
        =============================== */
     let memory = "";
+    let motivationPrefix = "";
+
     if (uid !== "guest" && env.APPANA_KV) {
+      // Memory
       memory = (await env.APPANA_KV.get(`mem:${uid}`)) || "";
+
+      // Streak Logic (New)
+      const today = new Date().toISOString().split('T')[0];
+      const lastSeen = await env.APPANA_KV.get(`last_seen:${uid}`);
+      
+      if (lastSeen !== today) {
+        let streak = Number(await env.APPANA_KV.get(`streak:${uid}`)) || 0;
+        // Check if yesterday
+        const yesterday = new Date(Date.now() - 864e5).toISOString().split('T')[0];
+        
+        if (lastSeen === yesterday) {
+          streak++;
+          motivationPrefix = `🔥 **${streak} Day Streak!** You are on fire!\n\n`;
+        } else {
+          streak = 1;
+          motivationPrefix = `🚀 **Day 1.** New beginnings. Let's conquer this!\n\n`;
+        }
+        await env.APPANA_KV.put(`last_seen:${uid}`, today);
+        await env.APPANA_KV.put(`streak:${uid}`, streak);
+      }
     }
 
     /* ===============================
-       5️⃣ DYNAMIC SYSTEM PROMPT
+       5️⃣ DYNAMIC SKT SYSTEM PROMPT
        =============================== */
-    let tone = "friendly, encouraging, exam-focused mentor";
+    
+    // Psychology/Mood Check
+    let moodInstruction = "Be High Energy, Inspiring, and punchy.";
+    if (message.match(/(scared|fail|can't|fear)/i)) {
+      moodInstruction = "Student is fearful. Be calm, brotherly, and supportive. Say 'I believe in you'.";
+    }
+
+    let tone = "You are Shashish Kumar Tiwari (SKT), the famous Youth Motivator and Educator.";
     let format = "clear and concise bullet points";
 
-    if (examMode === "teacher") tone = "strict, formal, precise Indian syllabus teacher";
+    if (examMode === "teacher") {
+        tone = "You are a strict, formal, precise Indian syllabus teacher.";
+        moodInstruction = "No motivation. Just facts.";
+    }
     else if (examMode === "2marks") format = "2–3 sentences, exam-oriented";
     else if (examMode === "5marks") format = "structured paragraph with 5 key points";
     else if (examMode === "8marks") format = "detailed essay with introduction, body, conclusion";
 
     const SYSTEM_PROMPT = `
-You are Appana AI.
-Role: ${tone}
+${tone}
 Subject: ${subject}
 Language: ${language}
 Exam Mode: ${examMode}
 Goal/Target: ${goal}
 Format Requirement: ${format}
+Current Mood Instruction: ${moodInstruction}
 
 Context History:
 ${memory}
@@ -92,11 +125,8 @@ Instructions:
 1. Use IndexedDB large subjects automatically when provided.
 2. Be Indian syllabus aware (CBSE / ICSE / NBSE / State Boards).
 3. Keep explanations clear, accurate, and exam-relevant.
-4. Use emojis sparingly and professionally:
-   - Maximum ONE emoji per full response
-   - NEVER use emojis in definitions, formulas, or exam answers
-   - Emojis allowed only for guidance or motivation
-5. Analyze any provided file or PDF content first.
+4. Use emojis sparingly and professionally (Visual Observation logic).
+5. If the user is lazy, politely roast them to wake them up.
 6. Generate original passages when asked for comprehension.
 `;
 
@@ -113,7 +143,6 @@ Instructions:
     }
 
     let reply = null;
-    let debugLog = [];
 
     /* ===============================
        7️⃣ GEMINI
@@ -133,9 +162,7 @@ Instructions:
         );
         const d = await r.json();
         reply = d?.candidates?.[0]?.content?.parts?.[0]?.text;
-      } catch (e) {
-        debugLog.push(`Gemini failed`);
-      }
+      } catch (e) {}
     }
 
     /* ===============================
@@ -203,17 +230,13 @@ Instructions:
     }
 
     /* ===============================
-       1️⃣1️⃣ PROFESSIONAL EMOJI LOGIC
+       1️⃣1️⃣ SKT FLAVOR (VISUAL EMOJIS + MUSIC)
        =============================== */
-    if (reply && !["2marks", "5marks", "8marks", "teacher"].includes(examMode)) {
-      const text = reply.toLowerCase();
-      let emoji = "";
-      if (text.includes("important")) emoji = "📌";
-      else if (text.includes("remember")) emoji = "💡";
-      else if (text.includes("warning")) emoji = "⚠️";
-      else if (text.includes("excellent")) emoji = "✅";
-
-      if (emoji) reply = `${emoji} ${reply}`;
+    if (reply) {
+      reply = addSKTFlavor(reply, examMode);
+      
+      // Add Streak Message
+      if (motivationPrefix) reply = motivationPrefix + reply;
     }
 
     /* ===============================
@@ -247,6 +270,57 @@ Instructions:
   }
 }
 
+// --- HELPER: SKT FLAVOR ENGINE ---
+function addSKTFlavor(text, examMode) {
+  if (examMode === "teacher") return text;
+
+  // 1. Music Hint
+  const tracks = [
+    "🎵 _Background: 'Lakshya' Title Track (Focus Mode)_",
+    "🎵 _Background: Epic Cinematic Drums (Battle Mode)_",
+    "🎵 _Background: Soft Piano & Rain (Deep Study)_"
+  ];
+  const music = tracks[Math.floor(Math.random() * tracks.length)];
+
+  // 2. Smart Emoji Injection (Visual Observation)
+  const keywords = {
+    "secure": "🛡️", "safe": "🛡️",
+    "fast": "⚡", "speed": "⚡",
+    "free": "💸", "money": "💸",
+    "growth": "📈", "scale": "📈",
+    "brain": "🧠", "smart": "🧠",
+    "important": "📌", "note": "📌",
+    "success": "🏆", "win": "🏆",
+    "focus": "🎯", "goal": "🎯",
+    "idea": "💡"
+  };
+
+  let lines = text.split("\n");
+  let emojiCount = 0;
+  
+  // Set Limits
+  let maxEmojis = 4;
+  if (examMode === "2marks") maxEmojis = 1;
+  if (examMode === "5marks") maxEmojis = 2;
+
+  const processedLines = lines.map(line => {
+    if (emojiCount >= maxEmojis) return line;
+    
+    for (let key in keywords) {
+      // Regex word boundary check for better accuracy
+      const regex = new RegExp(`\\b${key}\\b`, 'i');
+      if (regex.test(line) && !line.includes(keywords[key])) {
+         line = `${keywords[key]} ${line}`; 
+         emojiCount++;
+         break; // Only one emoji per line
+      }
+    }
+    return line;
+  });
+
+  return processedLines.join("\n") + `\n\n${music}`;
+}
+
 export function onRequestOptions() {
   return new Response(null, {
     headers: {
@@ -255,4 +329,5 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-  }
+        }
+          
