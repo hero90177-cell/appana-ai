@@ -11,6 +11,8 @@ const el = id => document.getElementById(id);
    3. Replace the URL below with your actual deployed Python Backend URL.
 */
 const OCR_URL = "http://localhost:8000"; 
+const OCR_URL = "https://appana-ai-backend.onrender.com"; 
+
 // Example: const OCR_URL = "https://your-backend-app.onrender.com";
 
 const API_URL = "/api/ai-chat"; // Points to Cloudflare Worker or Proxy
