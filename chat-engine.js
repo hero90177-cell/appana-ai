@@ -1,22 +1,16 @@
-// chat-engine.js (vFinal - Robust & Connected - Auto OCR Enhanced)
+// chat-engine.js (vFinal - Hybrid Auto OCR)
 import { auth, db } from './firebase-init.js';
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { STATE, saveData, timer } from './ui-manager.js';
 
 const el = id => document.getElementById(id);
 
-/* ⚠️ CRITICAL CONFIGURATION ⚠️
-   1. If testing on PHONE, 'localhost' will NOT work. You need a public URL (like ngrok).
-   2. If on 'pages.dev' (HTTPS), this URL MUST be HTTPS.
-   3. Replace the URL below with your actual deployed Python Backend URL.
-*/
+// ⚠️ BACKEND CONFIGURATION (Kept as Fallback)
 const OCR_URL = "https://appana-ai-backend.onrender.com"; 
-// Example: const OCR_URL = "https://your-backend-app.onrender.com";
-
-const API_URL = "/api/ai-chat"; // Points to Cloudflare Worker or Proxy
+const API_URL = "/api/ai-chat"; 
 
 let currentFile = null; 
-let scannedText = ""; // New: Stores text immediately after selection
+let scannedText = ""; 
 
 /* ---------------------- SETUP CHAT ---------------------- */
 export function setupChat() {
@@ -51,7 +45,7 @@ function loadChatHistory() {
     const chatBox = el("chat-box");
     if (!chatBox) return;
     
-    chatBox.innerHTML = ""; // Clear welcome message
+    chatBox.innerHTML = ""; 
     STATE.chatHistory.forEach(msg =>
         appendMsg(msg.who, msg.text, msg.cls, msg.id, false)
     );
@@ -62,64 +56,110 @@ function loadChatHistory() {
 function handleFileSelect(e) {
     if (e.target.files && e.target.files[0]) {
         currentFile = e.target.files[0];
-        scannedText = ""; // Reset previous scan result
+        scannedText = ""; 
         
         el("file-preview").classList.remove("hidden");
         el("file-name").innerText = currentFile.name;
         
-        // IMMEDIATE ACTION: Trigger Auto Scan
-        performAutoOCR(); 
+        // TRIGGER HYBRID SCAN
+        performHybridAutoOCR(); 
     }
 }
 
-// New Function: Runs automatically when file is selected
-async function performAutoOCR() {
+// ✅ HYBRID OCR LOGIC (Client First -> Server Fallback)
+async function performHybridAutoOCR() {
     if (!currentFile) return;
 
     const statusEl = el("ocr-status");
     if(statusEl) {
-        statusEl.innerText = "Scanning...";
-        statusEl.style.color = "#fbbf24"; // Yellow
+        statusEl.innerText = "🧠 Reading on device...";
+        statusEl.style.color = "#fbbf24"; 
     }
 
     try {
-        console.log(`📡 Connecting to OCR Backend at: ${OCR_URL}`);
+        // STEP 1: Try Client-Side (Fast, Free, No Server Sleep)
+        let text = "";
         
+        if (currentFile.type === "application/pdf") {
+             text = await performLocalPDFOCR(currentFile);
+        } else {
+             text = await performLocalImageOCR(currentFile);
+        }
+
+        // Validation: If local scan is too empty, it might be a scanned PDF image
+        if (!text || text.trim().length < 20) {
+            throw new Error("Local scan insufficient");
+        }
+        
+        scannedText = text;
+        if(statusEl) {
+            statusEl.innerText = "✓ Read locally";
+            statusEl.style.color = "#22c55e"; 
+        }
+        
+    } catch (clientErr) {
+        console.warn("⚠️ Client OCR incomplete, switching to Server...", clientErr);
+        
+        // STEP 2: Fallback to Render Server (Powerful, Handles Hindi/Scans)
+        if(statusEl) {
+            statusEl.innerText = "☁️ Server Scanning..."; // Let user know it might take a moment
+        }
+        await performServerOCR(); 
+    }
+}
+
+// 📱 Local Image OCR (Tesseract.js)
+async function performLocalImageOCR(file) {
+    if (!window.Tesseract) throw new Error("Tesseract not loaded");
+    const { data } = await window.Tesseract.recognize(file, 'eng+hin', { 
+        logger: m => console.log(m) 
+    });
+    return data.text;
+}
+
+// 📱 Local PDF Text Extractor (PDF.js)
+async function performLocalPDFOCR(file) {
+    if (!window.pdfjsLib) throw new Error("PDF.js not loaded");
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
+    let fullText = "";
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += content.items.map(item => item.str).join(" ") + "\n";
+    }
+    return fullText;
+}
+
+// ☁️ Server OCR (Render Fallback)
+async function performServerOCR() {
+    const statusEl = el("ocr-status");
+    try {
         const formData = new FormData();
         formData.append('file', currentFile);
         const endpoint = currentFile.type === "application/pdf" ? "/ocr/pdf" : "/ocr/image";
         
-        // Attempt OCR Fetch immediately
-        const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData })
-            .catch((err) => { 
-                throw new Error(`Network Error: Is Backend Running? (${err.message})`); 
-            });
-
-        if (!ocrResp.ok) throw new Error(`OCR Service Error: ${ocrResp.status}`);
+        const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData });
+        if (!ocrResp.ok) throw new Error(`Server Error: ${ocrResp.status}`);
         
         const ocrData = await ocrResp.json();
-        
-        // Store result in global variable for handleSend to use later
         scannedText = ocrData.text || ""; 
 
         if(statusEl) {
             if(scannedText && scannedText !== "(No text found)") {
-                statusEl.innerText = "✓ Scanned";
-                statusEl.style.color = "#22c55e"; // Green
+                statusEl.innerText = "✓ Server Scanned";
+                statusEl.style.color = "#22c55e"; 
             } else {
                 statusEl.innerText = "⚠ No Text Found";
-                statusEl.style.color = "#fbbf24"; 
             }
         }
-        
     } catch (err) {
-        console.error("Auto OCR Fail:", err);
-        scannedText = ""; // Ensure empty on failure
+        console.error("Server OCR Fail:", err);
+        scannedText = ""; 
         if(statusEl) {
             statusEl.innerText = "⚠ Scan Failed";
-            statusEl.style.color = "#ef4444"; // Red
-            // Add tooltip or console hint
-            console.warn("Hint: If on mobile, 'localhost' will not work. Use a public URL.");
+            statusEl.style.color = "#ef4444"; 
         }
     }
 }
@@ -132,10 +172,9 @@ function clearFile() {
 }
 
 function handleVoice() {
-    // Browser compatibility check
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("Voice not supported. Try Chrome or Edge.");
+        alert("Voice not supported. Try Chrome.");
         return;
     }
 
@@ -144,7 +183,7 @@ function handleVoice() {
     recognition.interimResults = false;
 
     const btn = el("voice-btn");
-    btn.style.color = "#ef4444"; // Red indicating recording
+    btn.style.color = "#ef4444"; 
 
     recognition.start();
 
@@ -155,10 +194,7 @@ function handleVoice() {
         btn.style.color = ""; 
     };
 
-    recognition.onerror = (e) => {
-        console.warn("Voice Error:", e.error);
-        btn.style.color = "";
-    };
+    recognition.onerror = (e) => { btn.style.color = ""; };
     recognition.onend = () => { btn.style.color = ""; };
 }
 
@@ -204,13 +240,12 @@ async function handleSend() {
     const aiId = "a_" + Date.now();
     appendMsg("🦅 Appana AI", "Thinking…", "ai-message", aiId, true);
 
-    // ATTACH SCANNED CONTEXT (Instant, no waiting)
+    // ATTACH SCANNED CONTEXT
     if (currentFile) {
         if (scannedText) {
              txt += `\n\n[CONTEXT FROM FILE]:\n${scannedText}`;
         } else {
-             // If scan failed or wasn't ready, we just note the file name
-             txt += `\n\n(Note: File '${currentFile.name}' attached. Text scan was not available or failed.)`;
+             txt += `\n\n(Note: File '${currentFile.name}' attached but no text could be extracted.)`;
         }
         clearFile();
     }
@@ -227,7 +262,6 @@ async function handleSend() {
         } else if (sub.startsWith("large_")) {
             const subjectId = sub.split("_")[1];
             try {
-                // Fetch from IndexedDB
                 const dbReq = indexedDB.open("appana_large_subjects", 1);
                 const largeSubContent = await new Promise((resolve) => {
                     dbReq.onsuccess = (e) => {
@@ -270,7 +304,6 @@ async function handleSend() {
         const d = await r.json();
         const reply = d.reply || "Error: No response from AI.";
 
-        // Update UI
         const aiEl = el(aiId);
         if (aiEl) {
             const formatted = (typeof marked !== 'undefined' && marked.parse) 
@@ -279,7 +312,6 @@ async function handleSend() {
             aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><div class="ai-text">${formatted}</div>`;
         }
 
-        // Save History
         const h = STATE.chatHistory.find(x => x.id === aiId);
         if (h) h.text = reply;
         saveData();
@@ -293,7 +325,7 @@ async function handleSend() {
     } catch (err) {
         console.error(err);
         const aiEl = el(aiId);
-        if (aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><br>⚠️ Network Error. Check connection or API URL.`;
+        if (aiEl) aiEl.innerHTML = `<strong>🦅 Appana AI:</strong><br>⚠️ Network Error.`;
     }
 }
 
