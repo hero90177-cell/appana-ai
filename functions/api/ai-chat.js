@@ -1,5 +1,5 @@
-// ai-chat.js (v3.1 FINAL – Ultimate Mentor Engine)
-// Features: Precision 6AM Ping, Deep Psychology, Weekly Growth, Pre-Exam Structure
+// ai-chat.js (v3.3 FINAL – Smart Hook Edition)
+// Features: Dynamic Verbosity, Context-Aware Hooks, Precision 6AM Ping, Deep Psychology
 
 export async function onRequestPost({ request, env }) {
   const cors = {
@@ -23,7 +23,7 @@ export async function onRequestPost({ request, env }) {
       };
       const ok = Object.values(keys).some(Boolean);
       return new Response(
-        JSON.stringify({ status: ok ? "ok" : "fail", mode: "Appana-v3.1-Mentor", keys_detected: keys }),
+        JSON.stringify({ status: ok ? "ok" : "fail", mode: "Appana-v3.3-SmartHook", keys_detected: keys }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
@@ -65,7 +65,7 @@ export async function onRequestPost({ request, env }) {
     let motivationPrefix = "";
     let growthStage = "Rookie Student"; 
 
-    // PSYCHOLOGY PRE-DETECT (Needed for History)
+    // PSYCHOLOGY PRE-DETECT
     let studentState = "neutral";
     const lowerMsg = message.toLowerCase();
     
@@ -105,24 +105,41 @@ export async function onRequestPost({ request, env }) {
         } catch(e) { weekHistory = []; }
         
         weekHistory.push({ date: today, streak: streak, state: studentState });
-        if(weekHistory.length > 30) weekHistory.shift(); // Keep last 30 entries
+        if(weekHistory.length > 30) weekHistory.shift(); 
         await env.APPANA_KV.put(historyKey, JSON.stringify(weekHistory));
       }
 
-      // Growth Personality Calculation
       if (streak > 30) growthStage = "Legendary Disciple (Unstoppable)";
       else if (streak > 14) growthStage = "Consistent Warrior (Focused)";
       else if (streak > 7) growthStage = "Rising Star (Building Habit)";
     }
 
     /* ===============================
-       5️⃣ PSYCHOLOGY & MODE ENGINE
+       5️⃣ PSYCHOLOGY, MODE & VERBOSITY ENGINE
        =============================== */
     
-    // Auto-switch Tone based on State & Mode
     let toneBase = "";
     let moodInstruction = "";
     let fearKillerScript = "";
+    let extraHookInstruction = ""; // ✅ NEW: Smart Hook Logic
+    
+    // 🧠 DYNAMIC VERBOSITY LOGIC
+    let verbosityLevel = "Medium"; 
+    const wordCount = message.trim().split(/\s+/).length;
+    
+    if (examMode === "normal") {
+        // Casual / Short Message
+        if (wordCount < 4 || lowerMsg.match(/^(hi|hello|hey|yo|namaste|good morning)/)) {
+            verbosityLevel = "Low (Conversational, 1-2 sentences, witty)";
+            // ✅ THE SMART FIX: Tell AI to use hooks naturally, not forced.
+            extraHookInstruction = "Start with a fun, engaging, or metaphorical hook (e.g., 'Imagine you are a hero...', 'Think like a grandmaster...').";
+        } else {
+            verbosityLevel = "Medium (Structured Mentor)";
+        }
+    } 
+    else if (examMode === "2marks") verbosityLevel = "Low (Precise)";
+    else if (examMode === "5marks") verbosityLevel = "Medium (Paragraph)";
+    else if (examMode === "8marks") verbosityLevel = "High (Detailed)";
 
     // 🅰️ TONE SELECTION MAP
     const TONES = {
@@ -134,7 +151,8 @@ export async function onRequestPost({ request, env }) {
     // 🅱️ MODE SWITCHING LOGIC
     if (examMode === "teacher") {
         toneBase = "You are a strict, formal Indian syllabus teacher. No emotion. Just facts.";
-        moodInstruction = "Precise definitions only. No motivation.";
+        moodInstruction = "Precise definitions only. No motivation. No hooks.";
+        extraHookInstruction = ""; // Disable hooks for teacher
     } 
     else if (examMode === "parent") {
         toneBase = TONES.calm;
@@ -149,17 +167,17 @@ export async function onRequestPost({ request, env }) {
         moodInstruction = "Generate a 1-minute high-energy motivational speech. Structure: (1) Focus Reminder, (2) Confidence Boost, (3) Last-Minute Command -> Pause -> Truth.";
     }
     else if (studentState === "fearful" || studentState === "stressed") {
-        toneBase = TONES.calm; // Auto-switch to Calm
-        moodInstruction = "Student is panicking/stressed. Use 'Panic-Mode' calming scripts. Speak word-by-word. Say 'Ruk. Saans le.' (Stop. Breathe).";
-        fearKillerScript = `WISDOM: "Darr ko fuel banao. Fear is just a signal to focus. One step at a time."`;
+        toneBase = TONES.calm;
+        moodInstruction = "Student is panicking. Use 'Visual Metaphors' (e.g., Fear is a dragon/fog). Speak word-by-word. Say 'Ruk. Saans le.' (Stop. Breathe).";
+        fearKillerScript = `WISDOM: "Ruk. Saans le. Imagine fear is a dragon — you don’t fight it all at once, just a step at a time."`;
     }
     else if (studentState === "lazy") {
-        toneBase = TONES.hard; // Auto-switch to Hard
-        moodInstruction = "Student is lazy. Roast them politely. Remind them of the competition. WAKE THEM UP.";
+        toneBase = TONES.hard;
+        moodInstruction = "Student is lazy. Roast them politely. Use storytelling metaphors (e.g., Rust vs Iron). WAKE THEM UP.";
     }
     else {
         toneBase = TONES.default;
-        moodInstruction = "Be authoritative, inspiring, and clear. Use 'Command -> Pause -> Truth' structure.";
+        moodInstruction = "Be authoritative, inspiring, and clear. Use 'Command -> Pause -> Truth' structure. Use Storytelling Hooks instead of lectures.";
     }
 
     /* ===============================
@@ -177,10 +195,12 @@ Subject: ${subject}
 Language: ${language}
 Exam Mode: ${examMode}
 Current State: ${studentState}
+Verbosity Level: ${verbosityLevel}
 Growth Level: ${growthStage}
 Goal: ${goal}
 Format: ${format}
 Instruction: ${moodInstruction}
+Additional Style: ${extraHookInstruction}
 ${fearKillerScript}
 
 Context History:
@@ -193,6 +213,8 @@ Directives:
 4. Be Indian syllabus aware (CBSE / ICSE / State Boards).
 5. End with a "Dagger Line" - one sharp truth that stays in their mind.
 6. Do not over-scold if the student is already down. Lift them up.
+7. Dynamic Length: If user says 'Hi', reply short & witty. If they ask a complex question, explain deeply.
+8. Use Metaphors: Use visual examples (e.g., Fear is fog, Laziness is rust) to make it interesting.
 `;
 
     let prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
@@ -297,8 +319,7 @@ Directives:
       reply = addMentorFlavor(reply, examMode, studentState);
       
       // ✅ 6 AM Precision Discipline Ping (UTC -> IST)
-      // IST is UTC + 5:30. 
-      // 6:00 AM IST = 00:30 UTC
+      // IST is UTC + 5:30. 6:00 AM IST = 00:30 UTC
       // Window: 6:00 AM to 6:15 AM IST
       const date = new Date();
       const currentUTCMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
@@ -361,8 +382,12 @@ function addMentorFlavor(text, examMode, studentState) {
   if(examMode === "hard" || examMode === "pre_exam") {
       text += "\n\n🎵 _(Background: High Intensity Beats)_";
   } else {
-      const music = atmospheres[Math.floor(Math.random() * atmospheres.length)];
-      if(Math.random() > 0.6) text += `\n\n${music}`;
+      // Logic adjustment: Don't add music to every short message to keep it "Hooks" focused
+      const isShort = text.length < 100;
+      if (!isShort) {
+          const music = atmospheres[Math.floor(Math.random() * atmospheres.length)];
+          if(Math.random() > 0.6) text += `\n\n${music}`;
+      }
   }
 
   // 2. Character Lock: Strip Casualness
@@ -417,5 +442,5 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-                        }
-                          
+}
+  
