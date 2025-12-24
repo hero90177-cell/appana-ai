@@ -126,7 +126,7 @@ async def ai_chat_endpoint(request: Request):
         # 3. Retrieve Memory
         previous_context = CHAT_MEMORY.get(uid, "")
 
-        # 4. Build Professional System Prompt (From your JS file)
+        # 4. Build Professional System Prompt
         tone = "friendly, encouraging, exam-focused mentor"
         format_req = "clear and concise bullet points"
 
@@ -160,7 +160,7 @@ Instructions:
 """
         full_prompt = f"{system_prompt}\n\nStudent: {message}"
 
-        # 5. Inject Large Subjects (Restored Feature)
+        # 5. Inject Large Subjects
         if "largeSubjects" in body and isinstance(body["largeSubjects"], list):
             extra = "\n\n".join([f"[{s['name']}]\n{s['content']}" for s in body["largeSubjects"]])
             full_prompt += f"\n\n[LARGE SUBJECT CONTEXT]:\n{extra}"
@@ -215,7 +215,6 @@ Instructions:
             return {"reply": "⚠️ All AI providers failed. Check your API Keys."}
 
         # 7. Post-Processing & Memory Update
-        # Add a relevant emoji if not in strict mode
         if examMode not in ["teacher", "2marks", "5marks", "8marks"]:
             lower = reply.lower()
             emoji = ""
@@ -238,9 +237,7 @@ Instructions:
 # ---------------------------------------------------------
 # 5. STATIC FILES (MUST BE LAST)
 # ---------------------------------------------------------
-# This serves index.html and other files from the current folder
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
-    # Host 0.0.0.0 allows mobile access
     uvicorn.run(app, host="0.0.0.0", port=8000)

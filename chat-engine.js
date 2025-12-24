@@ -5,9 +5,15 @@ import { STATE, saveData, timer } from './ui-manager.js';
 
 const el = id => document.getElementById(id);
 
-// ⚠️ CONFIGURATION: Change these if deploying!
+/* ⚠️ CRITICAL CONFIGURATION ⚠️
+   1. If testing on PHONE, 'localhost' will NOT work. You need a public URL (like ngrok).
+   2. If on 'pages.dev' (HTTPS), this URL MUST be HTTPS.
+   3. Replace the URL below with your actual deployed Python Backend URL.
+*/
+const OCR_URL = "http://localhost:8000"; 
+// Example: const OCR_URL = "https://your-backend-app.onrender.com";
+
 const API_URL = "/api/ai-chat"; // Points to Cloudflare Worker or Proxy
-const OCR_URL = "http://localhost:8000"; // Python Backend URL
 
 let currentFile = null; 
 let scannedText = ""; // New: Stores text immediately after selection
@@ -77,15 +83,19 @@ async function performAutoOCR() {
     }
 
     try {
+        console.log(`📡 Connecting to OCR Backend at: ${OCR_URL}`);
+        
         const formData = new FormData();
         formData.append('file', currentFile);
         const endpoint = currentFile.type === "application/pdf" ? "/ocr/pdf" : "/ocr/image";
         
         // Attempt OCR Fetch immediately
         const ocrResp = await fetch(`${OCR_URL}${endpoint}`, { method: 'POST', body: formData })
-            .catch(() => { throw new Error("Backend Offline"); });
+            .catch((err) => { 
+                throw new Error(`Network Error: Is Backend Running? (${err.message})`); 
+            });
 
-        if (!ocrResp.ok) throw new Error("OCR Service Error");
+        if (!ocrResp.ok) throw new Error(`OCR Service Error: ${ocrResp.status}`);
         
         const ocrData = await ocrResp.json();
         
@@ -93,7 +103,7 @@ async function performAutoOCR() {
         scannedText = ocrData.text || ""; 
 
         if(statusEl) {
-            if(scannedText) {
+            if(scannedText && scannedText !== "(No text found)") {
                 statusEl.innerText = "✓ Scanned";
                 statusEl.style.color = "#22c55e"; // Green
             } else {
@@ -108,6 +118,8 @@ async function performAutoOCR() {
         if(statusEl) {
             statusEl.innerText = "⚠ Scan Failed";
             statusEl.style.color = "#ef4444"; // Red
+            // Add tooltip or console hint
+            console.warn("Hint: If on mobile, 'localhost' will not work. Use a public URL.");
         }
     }
 }
