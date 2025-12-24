@@ -1,6 +1,4 @@
-// ai-chat.js (v3.0 FINAL – "Appana Guru" Mentor Edition)
-// Implements: Spiritual Tone, Fear Killers, Psychology Layer, & Multi-Provider Fallback
-
+// ai-chat.js (v2.2 FINAL – Mentor Edition, SKT Name Removed)
 export async function onRequestPost({ request, env }) {
   const cors = {
     "Access-Control-Allow-Origin": "*",
@@ -51,7 +49,7 @@ export async function onRequestPost({ request, env }) {
       const count = Number(await env.APPANA_KV.get(rateKey)) || 0;
       if (count >= 100) {
         return new Response(
-          JSON.stringify({ reply: "⚠️ You are chatting too fast. Pause. Breathe. Try in 1 minute." }),
+          JSON.stringify({ reply: "⚠️ You are chatting too fast. Please wait 1 minute." }),
           { headers: { ...cors, "Content-Type": "application/json" } }
         );
       }
@@ -68,21 +66,20 @@ export async function onRequestPost({ request, env }) {
       // Memory
       memory = (await env.APPANA_KV.get(`mem:${uid}`)) || "";
 
-      // Streak Logic
+      // Streak Logic (New)
       const today = new Date().toISOString().split('T')[0];
       const lastSeen = await env.APPANA_KV.get(`last_seen:${uid}`);
       
       if (lastSeen !== today) {
         let streak = Number(await env.APPANA_KV.get(`streak:${uid}`)) || 0;
-        // Check if yesterday
         const yesterday = new Date(Date.now() - 864e5).toISOString().split('T')[0];
         
         if (lastSeen === yesterday) {
           streak++;
-          motivationPrefix = `🔥 **${streak} Day Streak.** consistency hi safalta hai.\n\n`;
+          motivationPrefix = `🔥 **${streak} Day Streak!** You are on fire!\n\n`;
         } else {
           streak = 1;
-          motivationPrefix = `🚀 **Day 1.** Aaj shuru kiya hai. Ab rukna mat.\n\n`;
+          motivationPrefix = `🚀 **Day 1.** New beginnings. Let's conquer this!\n\n`;
         }
         await env.APPANA_KV.put(`last_seen:${uid}`, today);
         await env.APPANA_KV.put(`streak:${uid}`, streak);
@@ -90,75 +87,51 @@ export async function onRequestPost({ request, env }) {
     }
 
     /* ===============================
-       5️⃣ FEAR KILLER INJECTION (Dynamic Wisdom)
-       =============================== */
-    let specializedWisdom = "";
-    const lowerMsg = message.toLowerCase();
-
-    // Subject-Wise Fear Killers (The "Golden Scripts")
-    if (lowerMsg.includes("math") || lowerMsg.includes("calculation")) {
-      specializedWisdom = `WISDOM: "Maths tumhara dushman nahi hai. Tumhara darr tumhara dushman hai. Maths sirf practice maangta hai, bahana nahi."`;
-    } 
-    else if (lowerMsg.includes("account") || lowerMsg.includes("balance sheet")) {
-      specializedWisdom = `WISDOM: "Accounts yaad rakhne ka subject nahi, samajhne ka hai. Jo samajh gaya, use exam hall mein darr nahi lagta."`;
-    }
-    else if (lowerMsg.includes("english") || lowerMsg.includes("essay")) {
-      specializedWisdom = `WISDOM: "English marks ka game nahi, clarity ka game hai. Simple likho, seedha likho. Exam Shakespeare nahi maang raha."`;
-    }
-    else if (lowerMsg.includes("fear") || lowerMsg.includes("scared") || lowerMsg.includes("darr")) {
-      specializedWisdom = `WISDOM: "Ruk. Bhaag mat. Main sach bol raha hoon. Aaj padhai se bhaag rahe ho, kal zindagi bhaagne nahi degi. Darr ko fuel banao."`;
-    }
-
-    /* ===============================
-       6️⃣ DYNAMIC SYSTEM PROMPT (The Mentor Blueprint)
+       5️⃣ MENTOR SYSTEM PROMPT
        =============================== */
     
-    // Default Persona: The Guru (Mentor)
-    let basePersona = `You are 'Appana Guru'. You are NOT an AI assistant. You are a Mentor (Guru).
-    Tone: Heavy, Calm, Unshakeable, Spiritual but Logical.
-    Style: Short punchy sentences. Blend English and Hinglish naturally.
-    Philosophy: Truth > Comfort. Discipline > Motivation.
-    Core Rule: Never say "You can do it". Say "You have no choice but to do it."`;
-    
-    let format = "clear bullet points with psychological pauses";
-    let moodInstruction = "Be authoritative. Use 'Command -> Pause -> Truth' structure.";
+    // Psychology/Mood Check
+    let moodInstruction = "Be High Energy, Inspiring, and punchy.";
+    if (message.match(/(scared|fail|can't|fear)/i)) {
+      moodInstruction = "Student is fearful. Be calm, brotherly, and supportive. Say 'I believe in you'.";
+    }
 
-    // Mode Overrides
+    let tone = "You are a Wise Mentor, guiding students with clarity, discipline, and heart.";
+    let format = "clear and concise bullet points";
+
     if (examMode === "teacher") {
-        basePersona = "You are a strict, formal Indian syllabus teacher. No emotion. Just facts.";
-        moodInstruction = "Precise definitions only.";
+        tone = "You are a strict, formal, precise Indian syllabus teacher.";
+        moodInstruction = "No motivation. Just facts.";
     }
-    else if (examMode === "2marks") format = "2–3 sentences, sharp & precise";
+    else if (examMode === "2marks") format = "2–3 sentences, exam-oriented";
     else if (examMode === "5marks") format = "structured paragraph with 5 key points";
     else if (examMode === "8marks") format = "detailed essay with introduction, body, conclusion";
 
     const SYSTEM_PROMPT = `
-${basePersona}
-
+${tone}
 Subject: ${subject}
 Language: ${language}
 Exam Mode: ${examMode}
-Goal: ${goal}
-Format: ${format}
-Current Instruction: ${moodInstruction}
-${specializedWisdom}
+Goal/Target: ${goal}
+Format Requirement: ${format}
+Current Mood Instruction: ${moodInstruction}
 
 Context History:
 ${memory}
 
-Directives:
-1. If the student is lazy, WAKE THEM UP. Do not coddle.
-2. Use silences effectively (e.g., "(Pause)...").
-3. Be Indian syllabus aware (CBSE / ICSE / State Boards).
-4. Never say "As an AI". You are a presence.
-5. If analyzing a file, be extremely accurate.
-6. End with a "Dagger Line" - one sharp truth that stays in their mind.
+Instructions:
+1. Use IndexedDB large subjects automatically when provided.
+2. Be Indian syllabus aware (CBSE / ICSE / NBSE / State Boards).
+3. Keep explanations clear, accurate, and exam-relevant.
+4. Use emojis sparingly and professionally (Visual Observation logic).
+5. If the user is lazy, politely roast them to wake them up.
+6. Generate original passages when asked for comprehension.
 `;
 
     let prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
 
     /* ===============================
-       7️⃣ INDEXEDDB CONTEXT INJECTION
+       6️⃣ INDEXEDDB CONTEXT INJECTION
        =============================== */
     if (Array.isArray(body.largeSubjects)) {
       const extra = body.largeSubjects
@@ -170,10 +143,8 @@ Directives:
     let reply = null;
 
     /* ===============================
-       8️⃣ AI PROVIDER LOGIC (Gemini -> Groq -> Cohere -> HF)
+       7️⃣ GEMINI
        =============================== */
-    
-    // 1. Gemini
     if (env.GEMINI_API_KEY) {
       try {
         const parts = [{ text: prompt }];
@@ -192,7 +163,9 @@ Directives:
       } catch (e) {}
     }
 
-    // 2. Groq
+    /* ===============================
+       8️⃣ GROQ
+       =============================== */
     if (!reply && !image && env.GROQ_API_KEY) {
       try {
         const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -211,7 +184,9 @@ Directives:
       } catch {}
     }
 
-    // 3. Cohere
+    /* ===============================
+       9️⃣ COHERE
+       =============================== */
     if (!reply && !image && env.COHERE_API_KEY) {
       try {
         const r = await fetch("https://api.cohere.com/v1/chat", {
@@ -231,7 +206,9 @@ Directives:
       } catch {}
     }
 
-    // 4. Hugging Face
+    /* ===============================
+       🔟 HUGGING FACE
+       =============================== */
     if (!reply && !image && env.HF_API_KEY) {
       try {
         const r = await fetch(
@@ -251,17 +228,17 @@ Directives:
     }
 
     /* ===============================
-       9️⃣ MENTOR FLAVOR ENGINE (Post-Processing)
+       1️⃣1️⃣ MENTOR FLAVOR (VISUAL EMOJIS + MUSIC)
        =============================== */
     if (reply) {
       reply = addMentorFlavor(reply, examMode);
       
-      // Add Streak Message (If applicable)
+      // Add Streak Message
       if (motivationPrefix) reply = motivationPrefix + reply;
     }
 
     /* ===============================
-       🔟 SAVE MEMORY
+       🔁 SAVE MEMORY
        =============================== */
     if (uid !== "guest" && env.APPANA_KV && reply) {
       let mem = `${memory}\nQ: ${message}\nA: ${reply}`;
@@ -270,11 +247,11 @@ Directives:
     }
 
     /* ===============================
-       1️⃣1️⃣ FINAL RESPONSE
+       🔟 FINAL RESPONSE
        =============================== */
     if (!reply) {
       return new Response(
-        JSON.stringify({ reply: "⚠️ Connection unclear. Meditate on your connection settings (API Keys)." }),
+        JSON.stringify({ reply: "⚠️ All AI providers failed. Check API keys." }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
@@ -291,25 +268,19 @@ Directives:
   }
 }
 
-// --- HELPER: MENTOR FLAVOR ENGINE (Style & Atmosphere) ---
+// --- HELPER: MENTOR FLAVOR ENGINE ---
 function addMentorFlavor(text, examMode) {
   if (examMode === "teacher") return text;
 
-  // 1. Psychological Atmosphere (Silence > Music)
-  const atmospheres = [
-    "_(Silence... focus only on this)_",
-    "_(Deep Breath... Listen)_",
-    "🎵 _(Background: Slow Intensity)_"
+  // 1. Music Hint
+  const tracks = [
+    "🎵 _Background: 'Lakshya' Title Track (Focus Mode)_",
+    "🎵 _Background: Epic Cinematic Drums (Battle Mode)_",
+    "🎵 _Background: Soft Piano & Rain (Deep Study)_"
   ];
-  // Randomly add atmosphere at the end (30% chance) to not annoy
-  const atmosphere = Math.random() > 0.7 ? `\n\n${atmospheres[Math.floor(Math.random() * atmospheres.length)]}` : "";
+  const music = tracks[Math.floor(Math.random() * tracks.length)];
 
-  // 2. Character Lock: Strip Casualness
-  let refinedText = text
-    .replace(/\b(haha|lol|lmao|rofl)\b/gi, "") // Remove laughter
-    .replace(/\b(buddy|pal|dude)\b/gi, "dost"); // Use heavy words
-
-  // 3. Smart Emoji Injection (Controlled)
+  // 2. Smart Emoji Injection (Visual Observation)
   const keywords = {
     "secure": "🛡️", "safe": "🛡️",
     "fast": "⚡", "speed": "⚡",
@@ -319,15 +290,16 @@ function addMentorFlavor(text, examMode) {
     "important": "📌", "note": "📌",
     "success": "🏆", "win": "🏆",
     "focus": "🎯", "goal": "🎯",
-    "idea": "💡", "truth": "🔥"
+    "idea": "💡"
   };
 
-  let lines = refinedText.split("\n");
+  let lines = text.split("\n");
   let emojiCount = 0;
   
-  // Strict Limits for Mentor Tone
-  let maxEmojis = 3; 
+  // Set Limits
+  let maxEmojis = 4;
   if (examMode === "2marks") maxEmojis = 1;
+  if (examMode === "5marks") maxEmojis = 2;
 
   const processedLines = lines.map(line => {
     if (emojiCount >= maxEmojis) return line;
@@ -335,16 +307,15 @@ function addMentorFlavor(text, examMode) {
     for (let key in keywords) {
       const regex = new RegExp(`\\b${key}\\b`, 'i');
       if (regex.test(line) && !line.includes(keywords[key])) {
-         // Mentor style: Emoji at start, not middle
          line = `${keywords[key]} ${line}`; 
          emojiCount++;
-         break; 
+         break;
       }
     }
     return line;
   });
 
-  return processedLines.join("\n") + atmosphere;
+  return processedLines.join("\n") + `\n\n${music}`;
 }
 
 export function onRequestOptions() {
@@ -355,5 +326,4 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-                    }
-    
+  }
