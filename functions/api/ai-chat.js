@@ -1,5 +1,5 @@
-// ai-chat.js (v3.3 FINAL – Smart Hook Edition)
-// Features: Dynamic Verbosity, Context-Aware Hooks, Precision 6AM Ping, Deep Psychology
+// ai-chat.js (v3.4 FINAL – Smart Hook + Enhanced Visuals)
+// Features: Dynamic Verbosity, Context-Aware Hooks, Precision 6AM Ping, Deep Psychology, Richer Emojis
 
 export async function onRequestPost({ request, env }) {
   const cors = {
@@ -23,7 +23,7 @@ export async function onRequestPost({ request, env }) {
       };
       const ok = Object.values(keys).some(Boolean);
       return new Response(
-        JSON.stringify({ status: ok ? "ok" : "fail", mode: "Appana-v3.3-SmartHook", keys_detected: keys }),
+        JSON.stringify({ status: ok ? "ok" : "fail", mode: "Appana-v3.4-Visuals", keys_detected: keys }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
@@ -121,7 +121,7 @@ export async function onRequestPost({ request, env }) {
     let toneBase = "";
     let moodInstruction = "";
     let fearKillerScript = "";
-    let extraHookInstruction = ""; // ✅ NEW: Smart Hook Logic
+    let extraHookInstruction = ""; 
     
     // 🧠 DYNAMIC VERBOSITY LOGIC
     let verbosityLevel = "Medium"; 
@@ -131,7 +131,6 @@ export async function onRequestPost({ request, env }) {
         // Casual / Short Message
         if (wordCount < 4 || lowerMsg.match(/^(hi|hello|hey|yo|namaste|good morning)/)) {
             verbosityLevel = "Low (Conversational, 1-2 sentences, witty)";
-            // ✅ THE SMART FIX: Tell AI to use hooks naturally, not forced.
             extraHookInstruction = "Start with a fun, engaging, or metaphorical hook (e.g., 'Imagine you are a hero...', 'Think like a grandmaster...').";
         } else {
             verbosityLevel = "Medium (Structured Mentor)";
@@ -152,7 +151,7 @@ export async function onRequestPost({ request, env }) {
     if (examMode === "teacher") {
         toneBase = "You are a strict, formal Indian syllabus teacher. No emotion. Just facts.";
         moodInstruction = "Precise definitions only. No motivation. No hooks.";
-        extraHookInstruction = ""; // Disable hooks for teacher
+        extraHookInstruction = ""; 
     } 
     else if (examMode === "parent") {
         toneBase = TONES.calm;
@@ -396,25 +395,39 @@ function addMentorFlavor(text, examMode, studentState) {
     .replace(/\b(buddy|pal|dude)\b/gi, "dost"); 
 
   // 3. Smart Emoji Injection (Visual Observation)
+  // ✅ ENHANCED DICTIONARY: Added more relevant keywords for richer visuals
   const keywords = {
+    // Motivation & Wealth
     "secure": "🛡️", "safe": "🛡️",
     "fast": "⚡", "speed": "⚡",
     "free": "💸", "money": "💸",
-    "growth": "📈", "scale": "📈",
-    "brain": "🧠", "smart": "🧠",
-    "important": "📌", "note": "📌",
-    "success": "🏆", "win": "🏆",
-    "focus": "🎯", "goal": "🎯",
-    "idea": "💡", "truth": "🔥"
+    "growth": "📈", "scale": "📈", "success": "🏆", "win": "🏆",
+    
+    // Academic & Structure
+    "brain": "🧠", "smart": "🧠", "think": "🧠",
+    "important": "📌", "note": "📌", "remember": "🎗️",
+    "focus": "🎯", "goal": "🎯", "target": "🎯",
+    "idea": "💡", "truth": "🔥", "concept": "💡",
+    
+    // New Smart Keys
+    "question": "❓", "ask": "❓", "why": "❓",
+    "answer": "✅", "solution": "✅", "result": "✅",
+    "example": "📝", "sample": "📝",
+    "step": "🪜", "process": "🪜",
+    "time": "⏳", "clock": "⏳", "minute": "⏳",
+    "book": "📖", "read": "📖", "study": "📖",
+    "write": "✍️", "exam": "✍️",
+    "fail": "❌", "mistake": "❌", "error": "❌",
+    "alert": "⚠️", "warning": "⚠️"
   };
 
   let lines = refinedText.split("\n");
   let emojiCount = 0;
   
-  // Strict Limits based on Mode
-  let maxEmojis = 4;
-  if (examMode === "2marks") maxEmojis = 1;
-  if (examMode === "hard" || examMode === "parent") maxEmojis = 2; 
+  // ✅ INCREASED LIMITS: Slightly higher thresholds for more visuals
+  let maxEmojis = 7; // Up from 4
+  if (examMode === "2marks") maxEmojis = 2; // Up from 1
+  if (examMode === "hard" || examMode === "parent") maxEmojis = 4; // Up from 2
 
   const processedLines = lines.map(line => {
     if (emojiCount >= maxEmojis) return line;
@@ -442,5 +455,5 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-}
-  
+        }
+    
