@@ -1,77 +1,105 @@
 // voice-engine.js
-// Handles Text-to-Speech using the Browser's Native API (Free & Offline)
-// Optimized for "Appana Guru" Mentor Tone (Deep, Calm, Paced)
+// v4.0 SKT Edition – Dynamic Male Voice (Free/Native)
+// Features: "Dynamic Expression" (Changes tone based on punctuation)
 
 let synth = window.speechSynthesis;
 let voices = [];
+let voiceLoadAttempts = 0;
 
-// 1. Load Voices (Chrome loads them asynchronously)
+// 1. Robust Voice Loading (Retries if browser is slow)
 function loadVoices() {
     voices = synth.getVoices();
+    if (voices.length === 0 && voiceLoadAttempts < 5) {
+        voiceLoadAttempts++;
+        setTimeout(loadVoices, 200); // Retry every 200ms
+    }
 }
 
-// Force load immediately if possible, else wait for event
 loadVoices();
 if (speechSynthesis.onvoiceschanged !== undefined) {
     speechSynthesis.onvoiceschanged = loadVoices;
 }
 
-// 2. Clean Text & Inject Mentor Pauses
+// 2. Select the Best "Guru/SKT" Male Voice
+function getGuruVoice() {
+    if (!voices.length) loadVoices();
+
+    // Priority List for that "Deep/Strong" Male Vibe
+    // 1. "Microsoft Ravi" is the BEST free Indian Male voice on Windows.
+    // 2. "Google UK English Male" is very authoritative/spiritual.
+    // 3. Any voice explicitly marked "Male".
+    
+    return voices.find(v => v.name.includes("Ravi") && v.lang.includes("IN")) || 
+           voices.find(v => v.name.includes("Google UK English Male")) ||
+           voices.find(v => v.name.toLowerCase().includes("male") && v.lang.includes("en-IN")) ||
+           voices.find(v => v.name.toLowerCase().includes("male") && v.lang.includes("en")) ||
+           voices.find(v => v.lang === "en-GB") || // British accents often sound more "spiritual/educational"
+           voices.find(v => v.lang === "en-IN");   // Fallback
+}
+
+// 3. Clean Text & Add Psychological Pauses
 function cleanTextForSpeech(text) {
     return text
-        // Step A: Remove Markdown & Emojis
-        .replace(/\*/g, "") // Remove asterisks (bold)
-        .replace(/#/g, "")  // Remove hash signs
-        .replace(/\[.*?\]/g, "") // Remove [Background Music] text completely
-        .replace(/🎵|🔥|🦅|⚡|🛡️|💸|📈|🧠|📌|🏆|🎯|💡/g, "") // Remove Emojis
-        
-        // Step B: Convert "Stage Directions" into Natural Pauses (The Mentor Trick)
-        // Replaces "(Pause)" or "(Silence)" with periods/commas to force TTS to wait.
-        .replace(/\(pause.*?\)/gi, "... ...") 
-        .replace(/\(silence.*?\)/gi, "... ... ...")
-        .replace(/\(deep breath.*?\)/gi, "... ")
-        
-        // Step C: Clean lingering parenthesis
-        .replace(/\(.*?\)/g, "") 
+        .replace(/\*/g, "") 
+        .replace(/#/g, "")
+        .replace(/\[.*?\]/g, "") // Remove [Background Music]
+        .replace(/🎵|🔥|🦅|⚡|🛡️|💸|📈|🧠|📌|🏆|🎯|💡/g, "")
+        // Convert "Mentor Pauses" into long silence for TTS
+        .replace(/\(pause.*?\)/gi, " ... ... ") 
+        .replace(/\(silence.*?\)/gi, " ... ... ... ")
+        .replace(/(\r\n|\n|\r)/gm, " ... ") // New lines = pauses
         .trim();
 }
 
-// 3. The Speak Function (The Voice)
+// 4. The "SKT" Dynamic Engine
+// Splits text into chunks to simulate emotion (Loud Commands vs Deep Truths)
 export function speakAI(text) {
-    if (!synth) return; // Browser doesn't support it
-
-    // ALWAYS Stop previous speech before starting new one (Prevents overlapping chaos)
+    if (!synth) return;
+    
+    // Stop any current speech
     if (synth.speaking || synth.pending) {
         synth.cancel();
     }
 
-    // Prepare text
     const cleanText = cleanTextForSpeech(text);
     if (!cleanText) return;
 
-    // Create Utterance
-    const utterThis = new SpeechSynthesisUtterance(cleanText);
+    const targetVoice = getGuruVoice();
+    
+    // Split by punctuation to handle tone shifts
+    // senteces ending in ! = ENERGY
+    // sentences ending in . or ... = DEPTH
+    const segments = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
 
-    // 4. Select Voice (Prioritize Indian English/Hindi for that "Desi Mentor" feel)
-    if (!voices.length) loadVoices(); // Double check voices are loaded
+    segments.forEach((segment) => {
+        const utter = new SpeechSynthesisUtterance(segment.trim());
+        if (targetVoice) utter.voice = targetVoice;
 
-    const preferredVoice = voices.find(v => v.name.includes("Google हिन्दी") || v.name.includes("Hindi")) 
-                        || voices.find(v => v.lang === "en-IN")
-                        || voices.find(v => v.lang === "en-US");
+        // --- THE SKT ALGORITHM ---
+        
+        // CASE A: High Energy / Commands ("Wake up!", "Do it now!")
+        if (segment.includes("!") || segment.includes("?")) {
+            utter.pitch = 1.0;  // Normal pitch (Human-like)
+            utter.rate = 1.05;  // Slightly faster (Urgency)
+            utter.volume = 1.0; // Loud
+        } 
+        // CASE B: Deep Spiritual Truths / Pauses ("Consistency is power...", "Silence...")
+        else {
+            utter.pitch = 0.7;  // Deep Bass (God-mode)
+            utter.rate = 0.85;  // Slow & Deliberate (Hypnotic)
+            utter.volume = 1.0;
+        }
 
-    if (preferredVoice) utterThis.voice = preferredVoice;
+        // Slight tweak for British voices to not sound too robotically slow
+        if (targetVoice && targetVoice.name.includes("UK")) {
+            if (utter.pitch < 1) utter.pitch = 0.8; 
+        }
 
-    // 5. Mentor Settings (Crucial for Psychology)
-    // Slightly slower and deeper = More Authority
-    utterThis.pitch = 0.9; // 1.0 is normal, 0.9 is slightly deeper
-    utterThis.rate = 0.95; // 1.0 is normal, 0.95 is deliberate/calm
-    utterThis.volume = 1;
-
-    // Speak
-    synth.speak(utterThis);
+        synth.speak(utter);
+    });
 }
 
-// 6. Stop Function (Exported for Stop Button / Mic Button)
+// 5. Stop Function
 export function stopSpeaking() {
     if (synth) synth.cancel();
 }
