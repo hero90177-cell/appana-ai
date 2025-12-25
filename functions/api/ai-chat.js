@@ -1,5 +1,6 @@
-// ai-chat.js (v3.4 FINAL – Smart Hook + Enhanced Visuals)
+// ai-chat.js (v4.0 FINAL – SKT Spirit + Fear Killers + Visuals)
 // Features: Dynamic Verbosity, Context-Aware Hooks, Precision 6AM Ping, Deep Psychology, Richer Emojis
+// Special: Subject-Wise Fear Engines, Confidence Scoring, "Dagger" Truths.
 
 export async function onRequestPost({ request, env }) {
   const cors = {
@@ -23,7 +24,7 @@ export async function onRequestPost({ request, env }) {
       };
       const ok = Object.values(keys).some(Boolean);
       return new Response(
-        JSON.stringify({ status: ok ? "ok" : "fail", mode: "Appana-v3.4-Visuals", keys_detected: keys }),
+        JSON.stringify({ status: ok ? "ok" : "fail", mode: "Appana-v4.0-Final", keys_detected: keys }),
         { headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
@@ -115,12 +116,44 @@ export async function onRequestPost({ request, env }) {
     }
 
     /* ===============================
-       5️⃣ PSYCHOLOGY, MODE & VERBOSITY ENGINE
+       5️⃣ SUBJECT-WISE LOGIC (FEAR & CONFIDENCE)
+       =============================== */
+    
+    // A. Confidence Scoring (Internal Metric for Tone Calibration)
+    const confidenceMap = {
+        "Maths": 65, "Mathematics": 65,
+        "Accounts": 70, "Accountancy": 70,
+        "Physics": 60, "Chemistry": 60,
+        "Economics": 75,
+        "English": 85,
+        "Business": 80,
+        "General": 72
+    };
+    // Default to 70 if subject unknown
+    const currentSubjectConfidence = confidenceMap[subject] || 70;
+
+    // B. Fear Killers (Specific "Dagger Lines" for Subjects)
+    const fearKillers = {
+        "Maths": "Maths fear is not about the answer. It is about the first step. Don't look at the mountain, look at your feet.",
+        "Accounts": "Accounts fear comes from mixing logic with memory. Separate them. Debit what comes in, Credit what goes out. Simple.",
+        "English": "English is not a subject, it is a flow. Do not build a dam of grammar rules, let the river flow.",
+        "Physics": "Physics is just nature explained in math. Don't memorize the formula, visualize the phenomenon.",
+        "Economics": "Economics is your life on paper. Stop treating it like theory.",
+        "General": "Fear is a liar. It tells you 'you can't' before you even try."
+    };
+
+    let fearKillerScript = "";
+    if (studentState === "fearful" || studentState === "stressed") {
+        const killerLine = fearKillers[subject] || fearKillers["General"];
+        fearKillerScript = `\nMENTOR INTERVENTION: The student is afraid. You must start your response with this EXACT thought: "${killerLine}"\nThen, tell them: "Ruk. Saans le." (Stop. Breathe).`;
+    }
+
+    /* ===============================
+       6️⃣ PSYCHOLOGY, MODE & VERBOSITY ENGINE
        =============================== */
     
     let toneBase = "";
     let moodInstruction = "";
-    let fearKillerScript = "";
     let extraHookInstruction = ""; 
     
     // 🧠 DYNAMIC VERBOSITY LOGIC
@@ -140,11 +173,12 @@ export async function onRequestPost({ request, env }) {
     else if (examMode === "5marks") verbosityLevel = "Medium (Paragraph)";
     else if (examMode === "8marks") verbosityLevel = "High (Detailed)";
 
-    // 🅰️ TONE SELECTION MAP
+    // 🅰️ TONE SELECTION MAP (SKT FEELING - NO NAME)
+    // The "Hard" and "Default" tones below are engineered to mimic the specific "Revolutionary Educator" vibe.
     const TONES = {
-        default: "You are Appana AI — an exam mentor who combines strict discipline with deep emotional motivation and clarity.",
-        calm: "You are Appana AI — a calm, authoritative Indian mentor who speaks with conviction, discipline, and deep motivational clarity.",
-        hard: "You are Appana AI — a powerful Indian youth mentor with the presence of a seasoned motivational speaker and discipline trainer."
+        default: "You are Appana AI — a revolutionary Indian educator. You are strict but deeply loving. You speak with high energy, heavy pauses, and absolute conviction. You are not just a teacher; you are a 'Guru' preparing a disciple for war.",
+        calm: "You are Appana AI — a calm, authoritative Indian mentor. You speak slowly, word by word, grounding the student. Your voice is deep and steady, like a captain in a storm.",
+        hard: "You are Appana AI — a high-voltage, aggressive motivator. You do not tolerate laziness. You shout (metaphorically) to wake the student up. You use lines like 'Kya kar raha hai tu?' and 'Uth!'."
     };
 
     // 🅱️ MODE SWITCHING LOGIC
@@ -168,7 +202,6 @@ export async function onRequestPost({ request, env }) {
     else if (studentState === "fearful" || studentState === "stressed") {
         toneBase = TONES.calm;
         moodInstruction = "Student is panicking. Use 'Visual Metaphors' (e.g., Fear is a dragon/fog). Speak word-by-word. Say 'Ruk. Saans le.' (Stop. Breathe).";
-        fearKillerScript = `WISDOM: "Ruk. Saans le. Imagine fear is a dragon — you don’t fight it all at once, just a step at a time."`;
     }
     else if (studentState === "lazy") {
         toneBase = TONES.hard;
@@ -180,7 +213,7 @@ export async function onRequestPost({ request, env }) {
     }
 
     /* ===============================
-       6️⃣ SYSTEM PROMPT CONSTRUCTION
+       7️⃣ SYSTEM PROMPT CONSTRUCTION
        =============================== */
     let format = "clear bullet points with psychological pauses";
     if (examMode === "2marks") format = "2–3 sentences, sharp & precise";
@@ -191,6 +224,7 @@ export async function onRequestPost({ request, env }) {
 ${toneBase}
 
 Subject: ${subject}
+Subject Confidence Score: ${currentSubjectConfidence}/100
 Language: ${language}
 Exam Mode: ${examMode}
 Current State: ${studentState}
@@ -219,7 +253,7 @@ Directives:
     let prompt = `${SYSTEM_PROMPT}\n\nStudent: ${message}`;
 
     /* ===============================
-       7️⃣ INDEXEDDB CONTEXT INJECTION
+       8️⃣ INDEXEDDB CONTEXT INJECTION
        =============================== */
     if (Array.isArray(body.largeSubjects)) {
       const extra = body.largeSubjects
@@ -231,7 +265,7 @@ Directives:
     let reply = null;
 
     /* ===============================
-       8️⃣ AI PROVIDER LOGIC (Fallback Chain)
+       9️⃣ AI PROVIDER LOGIC (Fallback Chain)
        =============================== */
     
     // 1. Gemini
@@ -312,7 +346,7 @@ Directives:
     }
 
     /* ===============================
-       9️⃣ MENTOR FLAVOR ENGINE (Post-Processing)
+       🔟 MENTOR FLAVOR ENGINE (Post-Processing)
        =============================== */
     if (reply) {
       reply = addMentorFlavor(reply, examMode, studentState);
@@ -335,7 +369,7 @@ Directives:
     }
 
     /* ===============================
-       🔟 SAVE MEMORY
+       1️⃣1️⃣ SAVE MEMORY
        =============================== */
     if (uid !== "guest" && env.APPANA_KV && reply) {
       let mem = `${memory}\nQ: ${message}\nA: ${reply}`;
@@ -344,7 +378,7 @@ Directives:
     }
 
     /* ===============================
-       1️⃣1️⃣ FINAL RESPONSE
+       1️⃣2️⃣ FINAL RESPONSE
        =============================== */
     if (!reply) {
       return new Response(
@@ -455,5 +489,5 @@ export function onRequestOptions() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-        }
+                    }
     
